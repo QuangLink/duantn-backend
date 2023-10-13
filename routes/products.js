@@ -26,6 +26,7 @@ router.get('/:id', (req, res) => {
   });
 });
 
+
 // Add a new product
 router.post('/', (req, res) => {
   const newProduct = req.body;

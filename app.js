@@ -12,13 +12,13 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const productRouter = require('./routes/products');
 const registerRouter = require('./routes/register');
-
+const categoryRouter = require('./routes/category');
 const app = express();
 
 // Session configuration
 const options = {
   host: 'localhost',
-  port: 3306,
+  port: 3000,
   user: 'root',
   password: '',
   database: 'duantn'
@@ -49,7 +49,7 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/products', productRouter);
 app.use('/register', registerRouter);
-
+app.use('/category', categoryRouter);
 // 404 Not Found middleware
 app.use(function(req, res, next) {
   next(createError(404));
