@@ -3,32 +3,30 @@ const router = express.Router();
 const db = require('./../models/database');
 
 router.get('/', (req, res) => {
-  const prodName = req.query.prodName;
-
-  // Nếu không có prodName được cung cấp, trả về tất cả các sản phẩm
-  if (!prodName) {
-    const query = 'SELECT * FROM product';
-    db.query(query, (error, results) => {
-      if (error) throw error;
-      res.json(results);
-    });
-  } else {
-    // Nếu prodName được cung cấp, tìm sản phẩm theo tên
-    const query = 'SELECT * FROM product WHERE prodName LIKE ?';
-    db.query(query, [`%${prodName}%`], (error, results) => {
-      if (error) throw error;
-
-      if (results.length > 0) {
+    const prodName = req.query.prodName;
+  
+    // Nếu không có prodName được cung cấp, trả về tất cả các sản phẩm
+    if (!prodName) {
+      const query = 'SELECT * FROM product';
+      db.query(query, (error, results) => {
+        if (error) throw error;
         res.json(results);
-      } else {
-        res.status(404).send('No products found for the given prodName');
-      }
-    });
-  }
-});
-
-
-
+      });
+    } else {
+      // Nếu prodName được cung cấp, tìm sản phẩm theo tên
+      const query = 'SELECT * FROM product WHERE prodName LIKE ?';
+      db.query(query, [`%${prodName}%`], (error, results) => {
+        if (error) throw error;
+  
+        if (results.length > 0) {
+          res.json(results);
+        } else {
+          res.status(404).send('No products found for the given prodName');
+        }
+      });
+    }
+  });
+  
 // Get a specific product by ID
 router.get('/:id', (req, res) => {
   const productId = req.params.id;
