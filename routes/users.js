@@ -4,27 +4,8 @@ const db = require('./../models/database');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const { authenToken } = require('./Middleware');
-const MySQLStore = require('express-mysql-session')(session);
+
 require('dotenv').config();
-
-// Configure MySQLStore
-const options = {
-  host: 'localhost',
-  port: 9000,
-  user: 'root',
-  password: '',
-  database: 'duantn'
-};
-
-const sessionStore = new MySQLStore(options);
-
-router.use(session({
-  key: 'session_cookie_name',
-  secret: 'session_cookie_secret',
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false
-}));
 
 // Register
 router.post('/register', (req, res) => {

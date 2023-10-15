@@ -3,6 +3,14 @@ const router = express.Router();
 const db = require('./../models/database');
 
 router.get('/', (req, res) => {
+  const query = 'SELECT * FROM product';
+  db.query(query, (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+});
+
+router.get('/search', (req, res) => {
   const prodName = req.query.prodName;
 
   // Nếu không có prodName được cung cấp, trả về tất cả các sản phẩm
