@@ -10,6 +10,15 @@ router.get('/', (req, res) => {
     res.json(results);
   });
 });
+// Get products where prodSale is not 0
+router.get('/sale', (req, res) => {
+  const query = 'SELECT * FROM product WHERE prodSale <> 0'; // Thêm điều kiện WHERE
+  db.query(query, (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+});
+
 
 // Get a specific product by type
 router.get('/:product/:prodType', (req, res) => {
@@ -95,6 +104,4 @@ router.get('/:product/:prodType', (req, res) => {
     });
   });
     
-
-
 module.exports = router;
