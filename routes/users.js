@@ -23,14 +23,11 @@ router.post('/register', (req, res) => {
       if (row.username === username) {
         duplicateFields.push('Username');
         console.log('dup : username');
+       
       }
       if (row.email === email) {
         duplicateFields.push('Email');
         console.log('dup : email');
-      }
-      if (row.mobile === mobile) {
-        duplicateFields.push('Mobile');
-        console.log('dup : mobile');
       }
     });
 
@@ -67,13 +64,39 @@ router.post('/login', (req, res) => {
     const payload = {
       email: user.email,
       username: user.username,
+      admin: user.admin,
     };
-
+    console.log(payload.admin);
     const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
     console.log(token);
 
     res.json({ token });
   });
 });
+// Lấy email hoặc username từ request
+router.post('/address', authenToken, (req, res) => {
+  const {email, username} = req.payload;
+  
+  // Validate dữ liệu
+  if (!email && !username) {
+    return res.status(400).json({error: 'Email or username required'});
+  }
 
+  const address = req.body;
+  
+  // Câu lệnh SQL insert 
+  let insertQuery = 'INSERT INTO user_addresses SET ?';
+  
+  // Thêm điều kiện where nếu có email hoặc username
+  if (email) {
+    insertQuery += ' WHERE email = ?';
+  } else if (username) {
+    insertQuery += ' WHERE username = ?'; 
+  }
+
+  db.query(insertQuery, [address, email || username], (err, result) => {
+    // Xử lý lỗi và response
+  });
+
+});
 module.exports = router;

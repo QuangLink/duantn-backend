@@ -10,7 +10,7 @@ const cors = require('cors');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const productRouter = require('./routes/products');
-
+const adminRouter = require('./routes/admin');
 const categoryRouter = require('./routes/category');
 const app = express();
 
@@ -38,6 +38,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/products', productRouter);
+app.use('/admin', adminRouter);
 app.use('/category', categoryRouter);
 // 404 Not Found middleware
 app.use(function(req, res, next) {
