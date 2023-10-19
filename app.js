@@ -12,6 +12,7 @@ const usersRouter = require('./routes/users');
 const productRouter = require('./routes/products');
 const adminRouter = require('./routes/admin');
 const categoryRouter = require('./routes/category');
+const cartRouter = require('./routes/cart');
 const app = express();
 
 // Session configuration
@@ -40,6 +41,7 @@ app.use('/users', usersRouter);
 app.use('/products', productRouter);
 app.use('/admin', adminRouter);
 app.use('/category', categoryRouter);
+app.use('/cart', cartRouter);
 // 404 Not Found middleware
 app.use(function(req, res, next) {
   next(createError(404));

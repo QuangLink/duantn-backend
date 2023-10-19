@@ -65,38 +65,50 @@ router.post('/login', (req, res) => {
       email: user.email,
       username: user.username,
       admin: user.admin,
+      userID: user.userID
     };
-    console.log(payload.admin);
+    console.log(payload.userID);
+    console.log(payload.username);
     const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
     console.log(token);
 
-    res.json({ token });
+    res.json({ token,payload });
   });
 });
-// Lấy email hoặc username từ request
-router.post('/address', authenToken, (req, res) => {
-  const {email, username} = req.payload;
-  
-  // Validate dữ liệu
-  if (!email && !username) {
-    return res.status(400).json({error: 'Email or username required'});
-  }
-
-  const address = req.body;
-  
-  // Câu lệnh SQL insert 
-  let insertQuery = 'INSERT INTO user_addresses SET ?';
-  
-  // Thêm điều kiện where nếu có email hoặc username
-  if (email) {
-    insertQuery += ' WHERE email = ?';
-  } else if (username) {
-    insertQuery += ' WHERE username = ?'; 
-  }
-
-  db.query(insertQuery, [address, email || username], (err, result) => {
-    // Xử lý lỗi và response
+//update dữ liệu vào bảng user, field firstname,lastname,state, flat, address,city where username, import authenToken
+router.put('/address', (req, res) => {
+  const { username, firstname, lastname, state, flat, street, city } = req.body;
+  const query = 'UPDATE users SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ? WHERE username = ?';
+  db.query(query, [firstname, lastname, state, flat, street, city, username], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+    return res.status(201).json({ message: 'Record updated successfully.' });
   });
-
 });
+router.get('/address/:username', (req, res) => {
+  const { username } = req.params;
+  const query = 'SELECT * FROM users WHERE username = ?';
+  db.query(query, [username], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.status(200).json(result[0]);
+  });
+});
+router.delete('/address/:username', (req, res) => {
+  const { username } = req.body;
+  const query = 'UPDATE users SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ? WHERE username = ?';
+  db.query(query, ['', '', '', '', '', '', username], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+    return res.status(201).json({ message: 'Record updated successfully.' });
+  });
+}); 
+
+//router che
 module.exports = router;

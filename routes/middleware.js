@@ -19,7 +19,8 @@ function authenToken(req, res, next) {
 
     req.payload = payload;  // Assign the decoded payload to req.payload
     req.token = token;
-    req.username = payload.username;      // Assign the token to req.token
+    req.username = payload.username;
+    req.userID = payload.userID;
     next();
   });
 }
