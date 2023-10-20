@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('./../models/database');
-const { authenToken } = require('./Middleware');
+const { authenToken } = require('./middleware');
 
 router.get('/',authenToken, (req, res) => {
   const userID = req.payload.userID; // get userID from payload

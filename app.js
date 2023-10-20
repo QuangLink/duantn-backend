@@ -5,31 +5,12 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const app = express();
-const cors = require('cors');
-const corsOptions ={
-    origin:'http://localhost:3000', 
-    credentials:true,            //access-control-allow-credentials:true
-    optionSuccessStatus:200
-}
-app.use(cors(corsOptions));
-// Importing routes
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const productRouter = require('./routes/products');
 const adminRouter = require('./routes/admin');
 const categoryRouter = require('./routes/category');
 const cartRouter = require('./routes/cart');
-
-
-// Session configuration
-const options = {
-  host: 'localhost',
-  port: 3306,
-  user: 'root',
-  password: '',
-  database: 'duantn'
-};
-
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');

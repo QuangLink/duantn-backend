@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('./../models/database');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
-const { authenToken } = require('./Middleware');
+const { authenToken } = require('./middleware');
 
 require('dotenv').config();
 
