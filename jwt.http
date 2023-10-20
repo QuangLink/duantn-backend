@@ -1,14 +1,2 @@
-get http://localhost:9000/users/check
-Authorization: Beaer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IjFAZ21haWwuY29tIiwiaWF0IjoxNjk3MTIyMTg3LCJleHAiOjE2OTcxMjU3ODd9.xIXN81DOoKT_NHDv5C2zSqZCNBueD0pUWHpoJ_qKe98
-###
-post http://localhost:9000/address/
-
-
-{
-  "firstName": "John",
-  "lastName": "Doe",
-  "flat": "flat",
-  "state": "states",
-  "street": "s213",
-  "city": "state"
-}
+get https://duantn-backend.onrender.com/products
+Authorization: Beaer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiYWRtaW4iLCJhZG1pbiI6MSwidXNlcklEIjoxLCJpYXQiOjE2OTc4MzA5MzMsImV4cCI6MTY5NzgzNDUzM30.h5H7LJD8PMYKv4uiEqHHtjJs_pSZpdsWASxsXGRoGVo
