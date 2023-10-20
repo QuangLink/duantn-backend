@@ -6,13 +6,14 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const app = express();
 const cors = require('cors');
-const corsOptions ={
-    origin:'https://localhost:3000', 
-    credentials:true,
-    allowedHeaders:['Content-Type', 'Authorization','Origin','Accept'],
-    methods:['GET','POST','PUT','DELETE'],
-    optionSuccessStatus:200
+const corsOptions = {
+  origin: ['http://localhost:3000', 'https://localhost:3000'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  optionSuccessStatus: 200
 }
+
 
 // Importing routes
 const indexRouter = require('./routes/index');
