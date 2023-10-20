@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('./../models/database');
 const { authenToken } = require('./middleware');
-
+router.options('/', (req, res) => {
+  res.status(200).send('OK');
+});
 router.get('/',authenToken, (req, res) => {
   const userID = req.payload.userID; // get userID from payload
   const sql = `SELECT cart.*, users.*, product.*
