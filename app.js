@@ -7,7 +7,7 @@ const logger = require('morgan');
 const cors = require('cors');
 const app = express();
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000", "http://jaguarshop.me"],
   headers: ["Content-Type"],
   credentials: true,
 }
