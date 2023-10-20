@@ -15,7 +15,18 @@ const adminRouter = require('./routes/admin');
 const categoryRouter = require('./routes/category');
 const cartRouter = require('./routes/cart');
 
-
+app.use(function(req, res, next) {
+  // res.header("Access-Control-Allow-Origin", "*");
+  const allowedOrigins = ['http://localhost:3000', ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+       res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-credentials", true);
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, UPDATE");
+  next();
+});
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 app.use(logger('dev'));
@@ -24,14 +35,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 // Routes
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", 
-  "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Credentials", true);
-  next();
-});
+
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/products', productRouter);
