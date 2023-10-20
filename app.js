@@ -10,6 +10,8 @@ app.use(cors({
   origin: ["http://localhost:3000", "http://jaguarshop.me"],
   headers: ["Content-Type"],
   credentials: true,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: ['Content-Type', 'Authorization'], 
 }
 ))
 app.options('*', cors())
