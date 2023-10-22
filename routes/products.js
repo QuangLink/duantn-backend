@@ -3,7 +3,10 @@ const router = express.Router();
 const db = require('./../models/database');
 
 router.get('/', (req, res) => {
-  const query = 'SELECT * FROM product';
+  const query = `SELECT product.*, category.*
+  FROM product
+  LEFT JOIN category ON product.prodcatID = category.prodcatID;  
+  `;
   db.query(query, (error, results) => {
     if (error) throw error;
     res.json(results);
