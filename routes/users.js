@@ -6,6 +6,16 @@ const session = require('express-session');
 const { authenToken } = require('./middleware');
 
 require('dotenv').config();
+//get all users in users table
+
+router.get('/', (req, res) => {
+  const query = 'SELECT * FROM users';
+  db.query(query, (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+});
+
 
 // Register
 router.post('/register', (req, res) => {
@@ -110,5 +120,4 @@ router.delete('/address/:username', (req, res) => {
   });
 }); 
 
-//router che
 module.exports = router;
