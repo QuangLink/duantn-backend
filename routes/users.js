@@ -111,13 +111,19 @@ router.get('/address/:username', (req, res) => {
 });
 router.delete('/address/:username', (req, res) => {
   const { username } = req.params;
-  const query = 'UPDATE users SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ? WHERE username = ?';
-  db.query(query, ['', '', '', '', '', '', username], (err, result) => {
+  const query = `UPDATE users 
+  SET firstname = "", lastname = "", state = "", flat = "", street = "", city = "" , mobile =""
+  WHERE username = ?`;
+  db.query(query, [ username], (err, result) => {
     if (err) {
       return res.status(500).json({ error: 'Internal Server Error' });
     }
-    return res.status(200).json({ message: 'Address deleted successfully.' });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    return res.status(200).json({ message: 'Address information deleted successfully.' });
   });
-}); 
+});
+
 
 module.exports = router;
