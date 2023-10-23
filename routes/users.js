@@ -87,9 +87,9 @@ router.post('/login', (req, res) => {
 });
 //update dữ liệu vào bảng user, field firstname,lastname,state, flat, address,city where username, import authenToken
 router.put('/address', (req, res) => {
-  const { username, firstname, lastname, state, flat, street, city } = req.body;
-  const query = 'UPDATE users SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ? WHERE username = ?';
-  db.query(query, [firstname, lastname, state, flat, street, city, username], (err, result) => {
+  const { username, firstname, lastname, state, flat, street, city, mobile } = req.body;
+  const query = 'UPDATE users SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ?, mobile = ? WHERE username = ?';
+  db.query(query, [firstname, lastname, state, flat, street, city,mobile, username], (err, result) => {
     if (err) {
       return res.status(500).json({ error: 'Internal Server Error' });
     }
