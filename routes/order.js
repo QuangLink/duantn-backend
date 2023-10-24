@@ -3,19 +3,6 @@ const router = express.Router();
 const db = require("./../models/database");
 const { v1: uuidv1 } = require('uuid');
 
-router.get("/", (req, res) => {
-    const userID = req.payload.userID; // get userID from payload
-    const sql = `SELECT cart.*, users.*, product.*
-                             FROM cart
-                             LEFT JOIN users ON cart.userID = users.userID
-                             LEFT JOIN product ON cart.prodID = product.prodID
-                             WHERE cart.userID = ${userID} AND product.prodID = cart.prodID;`;
-
-    db.query(sql, (err, result) => {
-        if (err) throw err;
-        res.send(result);
-    });
-});
 
 router.post("/", (req, res) => {
     try {
@@ -87,9 +74,32 @@ router.post("/", (req, res) => {
     }
 });
 
-module.exports = router;
+//get order by orderCode
+router.get("/", (req, res) => {
+    const sql = `SELECT \`order\`.*, product.*, users.*
+                 FROM \`order\`
+                 LEFT JOIN product ON \`order\`.prodID = product.prodID
+                 LEFT JOIN users ON \`order\`.userID = users.userID
+                 ORDER BY orderCode;`;
+    db.query(sql, (err, result) => {
+        if (err) throw err;
+        res.send(result);
+    });
+});
 
-
+//get order by orderCode
+router.get("/:orderCode", (req, res) => {
+    const orderCode = req.params.orderCode;
+    const sql = `SELECT \`order\`.*, product.*, users.*
+                 FROM \`order\`
+                 LEFT JOIN product ON \`order\`.prodID = product.prodID
+                 LEFT JOIN users ON \`order\`.userID = users.userID
+                 WHERE orderCode = "${orderCode}";`;
+    db.query(sql, (err, result) => {
+        if (err) throw err;
+        res.send(result);
+    });
+});
 
 
 module.exports = router;

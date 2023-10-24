@@ -1,4 +1,4 @@
-POST http://localhost:9000/order/
+POST https://duantn-backend.onrender.com/order/
 Content-Type: application/json
 
 {
