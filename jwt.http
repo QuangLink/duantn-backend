@@ -1,2 +1,6 @@
-get https://duantn-backend.onrender.com/products
-Authorization: Beaer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJuYW1lIjoiYWRtaW4iLCJhZG1pbiI6MSwidXNlcklEIjoxLCJpYXQiOjE2OTc4MzA5MzMsImV4cCI6MTY5NzgzNDUzM30.h5H7LJD8PMYKv4uiEqHHtjJs_pSZpdsWASxsXGRoGVo
+POST http://localhost:9000/order/
+Content-Type: application/json
+
+{
+    "userID": "1"
+}
