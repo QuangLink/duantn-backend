@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require("./../models/database");
 const { v1: uuidv1 } = require('uuid');
 
-
+//post cart to order
 router.post("/", (req, res) => {
     try {
         if (req.body && req.body.userID) {
@@ -74,7 +74,7 @@ router.post("/", (req, res) => {
     }
 });
 
-//get order by orderCode
+//get all order by orderCode
 router.get("/", (req, res) => {
     const sql = `SELECT \`order\`.*, product.*, users.*
                  FROM \`order\`
@@ -100,6 +100,14 @@ router.get("/:orderCode", (req, res) => {
         res.send(result);
     });
 });
-
+// add delete order by orderCode
+router.delete("/", (req, res) => {
+    const orderCode = req.params.orderCode;
+    const sql = `DELETE FROM \`order\` WHERE orderCode = "${orderCode}";`;
+    db.query(sql, (err, result) => {
+        if (err) throw err;
+        res.send(result);
+    });
+});
 
 module.exports = router;
