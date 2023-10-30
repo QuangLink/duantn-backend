@@ -43,11 +43,10 @@ router.get('/search', (req, res) => {
 // Get a specific product by ID
 router.get('/:id', (req, res) => {
   const productId = req.params.id;
-  const query = `SELECT *
+  const query = `SELECT product.*, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
   FROM product
   LEFT JOIN feedback ON product.prodID = feedback.prodID
-  WHERE product.prodID = ?;`
-
+  WHERE product.prodID = ?`;
   db.query(query, [productId], (error, results) => {
     if (error) throw error;
 
