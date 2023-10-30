@@ -1,73 +1,80 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const db = require('./../models/database');
-const jwt = require('jsonwebtoken');
-const session = require('express-session');
-const { authenToken } = require('./middleware');
+const db = require("./../models/database");
+const jwt = require("jsonwebtoken");
+const session = require("express-session");
+const { authenToken } = require("./middleware");
 
-require('dotenv').config();
+require("dotenv").config();
 //get all users in users table
 
-router.get('/', (req, res) => {
-  const query = 'SELECT * FROM users';
+router.get("/", (req, res) => {
+  const query = "SELECT * FROM users";
   db.query(query, (error, results) => {
     if (error) throw error;
     res.json(results);
   });
 });
 
-
 // Register
-router.post('/register', (req, res) => {
+router.post("/register", (req, res) => {
   const { username, password, mobile, email } = req.body;
 
-  const queryCheckDup = 'SELECT * FROM users WHERE username = ? OR email = ? OR mobile = ?';
+  const queryCheckDup = "SELECT * FROM users WHERE username = ? OR email = ?";
 
   db.query(queryCheckDup, [username, email, mobile], (err, result) => {
     if (err) {
-      return res.status(500).json({ error: 'Internal Server Error' });
+      return res.status(500).json({ error: "Internal Server Error" });
     }
 
     const duplicateFields = [];
-    result.forEach(row => {
+    result.forEach((row) => {
       if (row.username === username) {
-        duplicateFields.push('Username');
-        console.log('dup : username');
-       
+        duplicateFields.push("Username");
+        console.log("dup : username");
       }
       if (row.email === email) {
-        duplicateFields.push('Email');
-        console.log('dup : email');
+        duplicateFields.push("Email");
+        console.log("dup : email");
       }
     });
 
     if (duplicateFields.length > 0) {
-      return res.status(400).json({ error: 'Duplicate entry for ' + duplicateFields.join(', ') });
+      return res
+        .status(400)
+        .json({ error: "Duplicate entry for " + duplicateFields.join(", ") });
     }
 
-    const insertQuery = 'INSERT INTO users (username, password, mobile, email) VALUES (?, ?, ?, ?)';
-    db.query(insertQuery, [username, password, mobile, email], (insertErr, insertResult) => {
-      if (insertErr) {
-        return res.status(500).json({ error: 'Internal Server Error' });
+    const insertQuery =
+      "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+    db.query(
+      insertQuery,
+      [username, password, email],
+      (insertErr, insertResult) => {
+        if (insertErr) {
+          return res.status(500).json({ error: "Internal Server Error" });
+        }
+        return res
+          .status(201)
+          .json({ message: "Record inserted successfully." });
       }
-      return res.status(201).json({ message: 'Record inserted successfully.' });
-    });
+    );
   });
 });
 
 //login
-router.post('/login', (req, res) => {
+router.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-  const query = 'SELECT * FROM users WHERE email = ? AND password = ?';
+  const query = "SELECT * FROM users WHERE email = ? AND password = ?";
   db.query(query, [email, password], (err, results) => {
     if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Internal Server Error' });
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
     }
 
     if (results.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: "Invalid credentials" });
     }
 
     const user = results[0];
@@ -75,55 +82,64 @@ router.post('/login', (req, res) => {
       email: user.email,
       username: user.username,
       admin: user.admin,
-      userID: user.userID
+      userID: user.userID,
     };
     console.log(payload.userID);
     console.log(payload.username);
-    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: "1h",
+    });
     console.log(token);
 
-    res.json({ token,payload });
+    res.json({ token, payload });
   });
 });
 //update dữ liệu vào bảng user, field firstname,lastname,state, flat, address,city where username, import authenToken
-router.put('/address', (req, res) => {
-  const { username, firstname, lastname, state, flat, street, city, mobile } = req.body;
-  const query = 'UPDATE users SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ?, mobile = ? WHERE username = ?';
-  db.query(query, [firstname, lastname, state, flat, street, city,mobile, username], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: 'Internal Server Error' });
+router.put("/address", (req, res) => {
+  const { username, firstname, lastname, state, flat, street, city, mobile } =
+    req.body;
+  const query =
+    "UPDATE users SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ?, mobile = ? WHERE username = ?";
+  db.query(
+    query,
+    [firstname, lastname, state, flat, street, city, mobile, username],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+      return res.status(201).json({ message: "Record updated successfully." });
     }
-    return res.status(201).json({ message: 'Record updated successfully.' });
-  });
+  );
 });
-router.get('/address/:username', (req, res) => {
+router.get("/address/:username", (req, res) => {
   const { username } = req.params;
-  const query = 'SELECT * FROM users WHERE username = ?';
+  const query = "SELECT * FROM users WHERE username = ?";
   db.query(query, [username], (err, result) => {
     if (err) {
-      return res.status(500).json({ error: 'Internal Server Error' });
+      return res.status(500).json({ error: "Internal Server Error" });
     }
     if (result.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
     return res.status(200).json(result[0]);
   });
 });
-router.delete('/address/:username', (req, res) => {
+router.delete("/address/:username", (req, res) => {
   const { username } = req.params;
   const query = `UPDATE users 
   SET firstname = "", lastname = "", state = "", flat = "", street = "", city = "" , mobile =""
   WHERE username = ?`;
-  db.query(query, [ username], (err, result) => {
+  db.query(query, [username], (err, result) => {
     if (err) {
-      return res.status(500).json({ error: 'Internal Server Error' });
+      return res.status(500).json({ error: "Internal Server Error" });
     }
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'User not found.' });
+      return res.status(404).json({ error: "User not found." });
     }
-    return res.status(200).json({ message: 'Address information deleted successfully.' });
+    return res
+      .status(200)
+      .json({ message: "Address information deleted successfully." });
   });
 });
-
 
 module.exports = router;
