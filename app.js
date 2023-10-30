@@ -16,7 +16,7 @@ app.use(
       "https://www.jaguarshop.me",
       "https://quanglink.github.io",
       "http://quanglink.github.io",
-      "https://duantn-woad.vercel.app/",
+      "https://duantn.onrender.com",
     ],
     headers: ["Content-Type"],
     credentials: true,
