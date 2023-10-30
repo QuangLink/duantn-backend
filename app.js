@@ -33,6 +33,7 @@ const adminRouter = require("./routes/admin");
 const categoryRouter = require("./routes/category");
 const cartRouter = require("./routes/cart");
 const orderRouter = require("./routes/order");
+const feedbackRouter = require("./routes/feedback");
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "pug");
@@ -50,6 +51,7 @@ app.use("/admin", adminRouter);
 app.use("/category", categoryRouter);
 app.use("/cart", cartRouter);
 app.use("/order", orderRouter);
+app.use("/feedback", feedbackRouter);
 // 404 Not Found middleware
 app.use(function (req, res, next) {
   next(createError(404));

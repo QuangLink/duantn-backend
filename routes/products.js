@@ -43,7 +43,11 @@ router.get('/search', (req, res) => {
 // Get a specific product by ID
 router.get('/:id', (req, res) => {
   const productId = req.params.id;
-  const query = 'SELECT * FROM product WHERE prodID = ?';
+  const query = `SELECT *
+  FROM product
+  LEFT JOIN feedback ON product.prodID = feedback.prodID
+  WHERE product.prodID = ?;`
+
   db.query(query, [productId], (error, results) => {
     if (error) throw error;
 

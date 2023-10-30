@@ -1,6 +1,10 @@
-POST https://duantn-backend.onrender.com/order/
+POST http://localhost:9000/feedback/3
 Content-Type: application/json
 
 {
-    "userID": "1"
+    "userID": "1",
+    "prodID": "3",
+    "comment": "Tôi rất thích sản phẩm này",
+    "prodRate": "2"
+
 }
