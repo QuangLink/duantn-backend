@@ -20,13 +20,13 @@ router.get("/:prodID", (req, res) => {
   });
 });
 //post feedback by prodID from client and userID prodRate, comment
-router.post("/:prodID", (req, res) => {
-  const { userID, prodRate, comment } = req.body;
+router.post("/", (req, res) => {
+  const {prodID, userID, prodRate, comment } = req.body;
   const query =
     "INSERT INTO feedback (userID, prodID, prodRate, comment) VALUES (?, ?, ?, ?)";
   db.query(
     query,
-    [userID, req.params.prodID, prodRate, comment],
+    [userID, prodID, prodRate, comment],
     (error, results) => {
       if (error) throw error;
       res.json(results);
