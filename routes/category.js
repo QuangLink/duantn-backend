@@ -30,11 +30,12 @@ router.get('/:product', (req, res) => {
   if (prodcatID) {
       // Tìm sản phẩm theo prodcatID
       const query = `
-          SELECT product.*, category.*
-          FROM product
-          JOIN category ON product.prodcatID = category.prodcatID
-          WHERE product.prodcatID = ?`;
-
+      SELECT product.*, category.*, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
+      FROM product
+      JOIN category ON product.prodcatID = category.prodcatID
+      LEFT JOIN feedback ON product.prodID = feedback.prodID
+      WHERE product.prodcatID = ?
+      GROUP BY product.prodID`;
       db.query(query, [prodcatID], (error, results) => {
           if (error) throw error;
 
@@ -47,10 +48,12 @@ router.get('/:product', (req, res) => {
   } else {
       // Nếu productParam là một prodType
       const query = `
-          SELECT product.*, category.*
-          FROM product
-          JOIN category ON product.prodcatID = category.prodcatID
-          WHERE product.prodType = ?`;
+      SELECT product.*, category.*, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
+      FROM product
+      JOIN category ON product.prodcatID = category.prodcatID
+      LEFT JOIN feedback ON product.prodID = feedback.prodID
+      WHERE product.prodType = ?
+      GROUP BY product.prodID`;
 
       db.query(query, [productParam], (error, results) => {
           if (error) throw error;
