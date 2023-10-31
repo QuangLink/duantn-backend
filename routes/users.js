@@ -45,29 +45,23 @@ router.post("/register", (req, res) => {
         .json({ error: "Duplicate entry for " + duplicateFields.join(", ") });
     }
 
-    // Hash the password
-    bcrypt.hash(password, 10, (hashErr, hashedPassword) => {
-      if (hashErr) {
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-
-      const insertQuery =
-        "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
-      db.query(
-        insertQuery,
-        [username, hashedPassword, email],
-        (insertErr, insertResult) => {
-          if (insertErr) {
-            return res.status(500).json({ error: "Internal Server Error" });
-          }
-          return res
-            .status(201)
-            .json({ message: "Record inserted successfully." });
+    const insertQuery =
+      "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+    db.query(
+      insertQuery,
+      [username, password, email],
+      (insertErr, insertResult) => {
+        if (insertErr) {
+          return res.status(500).json({ error: "Internal Server Error" });
         }
-      );
-    });
+        return res
+          .status(201)
+          .json({ message: "Record inserted successfully." });
+      }
+    );
   });
 });
+
 //login
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
