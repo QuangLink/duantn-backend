@@ -4,7 +4,7 @@ const db = require("./../models/database");
 const jwt = require("jsonwebtoken");
 const session = require("express-session");
 const { authenToken } = require("./middleware");
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 require("dotenv").config();
 //get all users in users table
 
