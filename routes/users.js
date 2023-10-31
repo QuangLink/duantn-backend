@@ -4,7 +4,7 @@ const db = require("./../models/database");
 const jwt = require("jsonwebtoken");
 const session = require("express-session");
 const { authenToken } = require("./middleware");
-const bcrypt = require('bcryptjs');
+
 require("dotenv").config();
 //get all users in users table
 
@@ -72,8 +72,8 @@ router.post("/register", (req, res) => {
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-  const query = "SELECT * FROM users WHERE email = ?";
-  db.query(query, [email], (err, results) => {
+  const query = "SELECT * FROM users WHERE email = ? AND password = ?";
+  db.query(query, [email, password], (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Internal Server Error" });
@@ -84,30 +84,20 @@ router.post("/login", (req, res) => {
     }
 
     const user = results[0];
-    
-    // Compare the password using Bcrypt
-    bcrypt.compare(password, user.password, (compareErr, result) => {
-      if (compareErr) {
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-
-      if (!result) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      const payload = {
-        email: user.email,
-        username: user.username,
-        admin: user.admin,
-        userID: user.userID,
-      };
-      const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "1h",
-      });
-    ;
-
-      res.json({ token, payload });
+    const payload = {
+      email: user.email,
+      username: user.username,
+      admin: user.admin,
+      userID: user.userID,
+    };
+    console.log(payload.userID);
+    console.log(payload.username);
+    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: "1h",
     });
+    console.log(token);
+
+    res.json({ token, payload });
   });
 });
 //update dữ liệu vào bảng user, field firstname,lastname,state, flat, address,city where username, import authenToken
