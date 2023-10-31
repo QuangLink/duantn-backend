@@ -101,12 +101,10 @@ router.post("/login", (req, res) => {
         admin: user.admin,
         userID: user.userID,
       };
-      console.log(payload.userID);
-      console.log(payload.username);
       const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
       });
-      console.log(token);
+    ;
 
       res.json({ token, payload });
     });
