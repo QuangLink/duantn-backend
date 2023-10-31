@@ -1,9 +1,9 @@
-POST https://duantn-backend.onrender.com/users/register
+POST http://localhost:9000/users/register
 Content-Type: application/json
 
 {
-    "username": "linhtest2",
-    "email": "linh12@gmail.com",
+    "username": "linhtest22",
+    "email": "linh122@gmail.com",
     "password": "2508"
 
 }

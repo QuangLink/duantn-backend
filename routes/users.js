@@ -4,6 +4,7 @@ const db = require("./../models/database");
 const jwt = require("jsonwebtoken");
 const session = require("express-session");
 const { authenToken } = require("./middleware");
+const bcrypt = require("bcrypt");
 
 require("dotenv").config();
 //get all users in users table
@@ -18,11 +19,11 @@ router.get("/", (req, res) => {
 
 // Register
 router.post("/register", (req, res) => {
-  const { username, password, mobile, email } = req.body;
+  const { username, password, email } = req.body;
 
   const queryCheckDup = "SELECT * FROM users WHERE username = ? OR email = ?";
 
-  db.query(queryCheckDup, [username, email, mobile], (err, result) => {
+  db.query(queryCheckDup, [username, email], (err, result) => {
     if (err) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
@@ -45,20 +46,25 @@ router.post("/register", (req, res) => {
         .json({ error: "Duplicate entry for " + duplicateFields.join(", ") });
     }
 
-    const insertQuery =
-      "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
-    db.query(
-      insertQuery,
-      [username, password, email],
-      (insertErr) => {
-        if (insertErr) {
-          return res.status(500).json({ error: "Internal Server Error" });
-        }
-        return res
-          .status(201)
-          .json({ message: "Record inserted successfully." });
+    bcrypt.hash(password, 10, (err, hash) => {
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
       }
-    );
+      const insertQuery =
+        "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+      db.query(
+        insertQuery,
+        [username, hash, email],
+        (insertErr, insertResult) => {
+          if (insertErr) {
+            return res.status(500).json({ error: "Internal Server Error" });
+          }
+          return res
+            .status(201)
+            .json({ message: "Record inserted successfully." });
+        }
+      );
+    });
   });
 });
 
@@ -66,8 +72,8 @@ router.post("/register", (req, res) => {
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-  const query = "SELECT * FROM users WHERE email = ? AND password = ?";
-  db.query(query, [email, password], (err, results) => {
+  const query = "SELECT * FROM users WHERE email = ?";
+  db.query(query, [email], (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Internal Server Error" });
@@ -78,22 +84,31 @@ router.post("/login", (req, res) => {
     }
 
     const user = results[0];
-    const payload = {
-      email: user.email,
-      username: user.username,
-      admin: user.admin,
-      userID: user.userID,
-    };
-    console.log(payload.userID);
-    console.log(payload.username);
-    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: "1h",
-    });
-    console.log(token);
+    bcrypt.compare(password, user.password, (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+      if (!result) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      const payload = {
+        email: user.email,
+        username: user.username,
+        admin: user.admin,
+        userID: user.userID,
+      };
+      console.log(payload.userID);
+      console.log(payload.username);
+      const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      console.log(token);
 
-    res.json({ token, payload });
+      res.json({ token, payload });
+    });
   });
 });
+
 //update dữ liệu vào bảng user, field firstname,lastname,state, flat, address,city where username, import authenToken
 router.put("/address", (req, res) => {
   const { username, firstname, lastname, state, flat, street, city, mobile } =
