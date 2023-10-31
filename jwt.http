@@ -1,10 +1,9 @@
-POST http://localhost:9000/feedback/
+POST https://duantn-backend.onrender.com/users/register
 Content-Type: application/json
 
 {
-    "userID": "1",
-    "prodID": "4",
-    "comment": "Tôi rất thích sản phẩm này",
-    "prodRate": "2"
+    "username": "linhtest2",
+    "email": "linh12@gmail.com",
+    "password": "2508"
 
 }
