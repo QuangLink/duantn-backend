@@ -50,7 +50,7 @@ router.post("/register", (req, res) => {
     db.query(
       insertQuery,
       [username, password, email],
-      (insertErr, insertResult) => {
+      (insertErr) => {
         if (insertErr) {
           return res.status(500).json({ error: "Internal Server Error" });
         }
