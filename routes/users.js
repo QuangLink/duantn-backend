@@ -4,8 +4,7 @@ const db = require("./../models/database");
 const jwt = require("jsonwebtoken");
 const session = require("express-session");
 const { authenToken } = require("./middleware");
-const bcrypt = require("bcrypt");
-
+const bcrypt = require('bcrypt');
 require("dotenv").config();
 //get all users in users table
 
@@ -46,15 +45,17 @@ router.post("/register", (req, res) => {
         .json({ error: "Duplicate entry for " + duplicateFields.join(", ") });
     }
 
-    bcrypt.hash(password, 10, (err, hash) => {
-      if (err) {
+    // Hash the password
+    bcrypt.hash(password, 10, (hashErr, hashedPassword) => {
+      if (hashErr) {
         return res.status(500).json({ error: "Internal Server Error" });
       }
+
       const insertQuery =
         "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
       db.query(
         insertQuery,
-        [username, hash, email],
+        [username, hashedPassword, email],
         (insertErr, insertResult) => {
           if (insertErr) {
             return res.status(500).json({ error: "Internal Server Error" });
@@ -67,7 +68,6 @@ router.post("/register", (req, res) => {
     });
   });
 });
-
 //login
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
@@ -84,13 +84,17 @@ router.post("/login", (req, res) => {
     }
 
     const user = results[0];
-    bcrypt.compare(password, user.password, (err, result) => {
-      if (err) {
+    
+    // Compare the password using Bcrypt
+    bcrypt.compare(password, user.password, (compareErr, result) => {
+      if (compareErr) {
         return res.status(500).json({ error: "Internal Server Error" });
       }
+
       if (!result) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
+
       const payload = {
         email: user.email,
         username: user.username,
@@ -108,7 +112,6 @@ router.post("/login", (req, res) => {
     });
   });
 });
-
 //update dữ liệu vào bảng user, field firstname,lastname,state, flat, address,city where username, import authenToken
 router.put("/address", (req, res) => {
   const { username, firstname, lastname, state, flat, street, city, mobile } =
