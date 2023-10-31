@@ -8,16 +8,7 @@ const cors = require("cors");
 const app = express();
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://jaguarshop.me",
-      "https://jaguarshop.me",
-      "http://www.jaguarshop.me",
-      "https://www.jaguarshop.me",
-      "https://quanglink.github.io",
-      "http://quanglink.github.io",
-      "https://duantn.onrender.com",
-    ],
+    origin: "*",
     headers: ["Content-Type"],
     credentials: true,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
