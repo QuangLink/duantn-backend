@@ -45,20 +45,14 @@ router.post("/register", (req, res) => {
         .json({ error: "Duplicate entry for " + duplicateFields.join(", ") });
     }
 
-    const insertQuery =
+    const query =
       "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
-    db.query(
-      insertQuery,
-      [username, password, email],
-      (insertErr) => {
-        if (insertErr) {
-          return res.status(500).json({ error: "Internal Server Error" });
-        }
-        return res
-          .status(201)
-          .json({ message: "Record inserted successfully." });
+    db.query(query, [username, password, email], (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
       }
-    );
+      return res.status(201).json({ message: "User created successfully." });
+    });
   });
 });
 
