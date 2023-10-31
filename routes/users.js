@@ -7,8 +7,8 @@ const { authenToken } = require("./middleware");
 const bcrypt = require("bcrypt");
 
 require("dotenv").config();
-
 //get all users in users table
+
 router.get("/", (req, res) => {
   const query = "SELECT * FROM users";
   db.query(query, (error, results) => {
@@ -18,12 +18,12 @@ router.get("/", (req, res) => {
 });
 
 // Register
-router.post("/register", async (req, res) => {
-  const { username, password, mobile, email } = req.body;
+router.post("/register", (req, res) => {
+  const { username, password, email } = req.body;
 
   const queryCheckDup = "SELECT * FROM users WHERE username = ? OR email = ?";
 
-  db.query(queryCheckDup, [username, email], async (err, result) => {
+  db.query(queryCheckDup, [username, email], (err, result) => {
     if (err) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
@@ -46,39 +46,34 @@ router.post("/register", async (req, res) => {
         .json({ error: "Duplicate entry for " + duplicateFields.join(", ") });
     }
 
-    try {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
+    bcrypt.hash(password, 10, (err, hash) => {
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
       const insertQuery =
         "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
       db.query(
         insertQuery,
-        [username, hashedPassword, email],
+        [username, hash, email],
         (insertErr, insertResult) => {
           if (insertErr) {
-            return res
-              .status(500)
-              .json({ error: "Internal Server Error" });
+            return res.status(500).json({ error: "Internal Server Error" });
           }
           return res
             .status(201)
             .json({ message: "Record inserted successfully." });
         }
       );
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+    });
   });
 });
 
 //login
-router.post("/login", async (req, res) => {
+router.post("/login", (req, res) => {
   const { email, password } = req.body;
 
   const query = "SELECT * FROM users WHERE email = ?";
-  db.query(query, [email], async (err, results) => {
+  db.query(query, [email], (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Internal Server Error" });
@@ -89,12 +84,13 @@ router.post("/login", async (req, res) => {
     }
 
     const user = results[0];
-    try {
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
+    bcrypt.compare(password, user.password, (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+      if (!result) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
-
       const payload = {
         email: user.email,
         username: user.username,
@@ -109,10 +105,7 @@ router.post("/login", async (req, res) => {
       console.log(token);
 
       res.json({ token, payload });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+    });
   });
 });
 
@@ -133,7 +126,6 @@ router.put("/address", (req, res) => {
     }
   );
 });
-
 router.get("/address/:username", (req, res) => {
   const { username } = req.params;
   const query = "SELECT * FROM users WHERE username = ?";
@@ -147,7 +139,6 @@ router.get("/address/:username", (req, res) => {
     return res.status(200).json(result[0]);
   });
 });
-
 router.delete("/address/:username", (req, res) => {
   const { username } = req.params;
   const query = `UPDATE users 
@@ -167,4 +158,3 @@ router.delete("/address/:username", (req, res) => {
 });
 
 module.exports = router;
-
