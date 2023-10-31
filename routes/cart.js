@@ -31,16 +31,44 @@ router.put('/minus/:cartID', (req, res) => {
   const sql = `UPDATE cart SET quantity = quantity - 1 WHERE cartID = ${cartID};`;
   db.query(sql, (err, result) => {
     if (err) throw err;
-    res.send(result);
+    const sql2 = `SELECT quantity FROM cart WHERE cartID = ${cartID};`;
+    db.query(sql2, (err, result2) => {
+      if (err) throw err;
+      if (result2[0].quantity === 0) {
+        const sql3 = `DELETE FROM cart WHERE cartID = ${cartID};`;
+        db.query(sql3, (err, result3) => {
+          if (err) throw err;
+          res.send(result3);
+        });
+      } else {
+        res.send(result);
+      }
+    });
   });
 });
 //thêm sản phẩm vào giỏ hàng dựa trên prodID và userID
 router.post('/', (req, res) => {
   const { prodID, userID } = req.body;
-  const sql = `INSERT INTO cart (prodID, userID) VALUES (${prodID}, ${userID});`;
-  db.query(sql, (err, result) => {
+  if (!userID) {
+    res.status(500).send('Missing userID');
+    return;
+  }
+  const checkSql = `SELECT * FROM cart WHERE prodID = ${prodID} AND userID = ${userID};`;
+  db.query(checkSql, (err, result) => {
     if (err) throw err;
-    res.send(result);
+    if (result.length > 0) {
+      const updateSql = `UPDATE cart SET quantity = quantity + 1 WHERE prodID = ${prodID} AND userID = ${userID};`;
+      db.query(updateSql, (err, result) => {
+        if (err) throw err;
+        res.send(result);
+      });
+    } else {
+      const insertSql = `INSERT INTO cart (prodID, userID, quantity) VALUES (${prodID}, ${userID}, 1);`;
+      db.query(insertSql, (err, result) => {
+        if (err) throw err;
+        res.send(result);
+      });
+    }
   });
 });
 //xóa sản phẩm trong giỏ hàng dựa trên prodID
