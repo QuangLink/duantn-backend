@@ -18,11 +18,11 @@ router.get("/", (req, res) => {
 
 // Register
 router.post("/register", (req, res) => {
-  const { username, password, email } = req.body;
+  const { username, password, mobile, email } = req.body;
 
   const queryCheckDup = "SELECT * FROM users WHERE username = ? OR email = ?";
 
-  db.query(queryCheckDup, [username, email], (err, result) => {
+  db.query(queryCheckDup, [username, email, mobile], (err, result) => {
     if (err) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
@@ -45,14 +45,20 @@ router.post("/register", (req, res) => {
         .json({ error: "Duplicate entry for " + duplicateFields.join(", ") });
     }
 
-    const query =
+    const insertQuery =
       "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
-    db.query(query, [username, password, email], (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: "Internal Server Error" });
+    db.query(
+      insertQuery,
+      [username, password, email],
+      (insertErr, insertResult) => {
+        if (insertErr) {
+          return res.status(500).json({ error: "Internal Server Error" });
+        }
+        return res
+          .status(201)
+          .json({ message: "Record inserted successfully." });
       }
-      return res.status(201).json({ message: "User created successfully." });
-    });
+    );
   });
 });
 
