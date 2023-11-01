@@ -5,7 +5,7 @@ const { authenToken } = require('./middleware');
 router.options('/', (req, res) => {
   res.status(200).send('OK');
 });
-router.get('/',authenToken, (req, res) => {
+router.get('/', (req, res) => {
   const userID = req.payload.userID; // get userID from payload
   const sql = `SELECT cart.*, users.*, product.*
                FROM cart
