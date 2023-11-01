@@ -6,7 +6,7 @@ router.options("/", (req, res) => {
   res.status(200).send("OK");
 });
 router.get("/", (req, res) => {
-  const userID = req.payload.userID; // get userID from payload
+  const userID = req.body;
   const sql = `SELECT cart.*, users.*, product.*
                FROM cart
                LEFT JOIN users ON cart.userID = users.userID
