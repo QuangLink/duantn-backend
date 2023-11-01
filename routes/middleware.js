@@ -21,6 +21,7 @@ function authenToken(req, res, next) {
     req.token = token;
     req.username = payload.username;
     req.userID = payload.userID;
+    req.userID = payload.admin;
     next();
   });
 }
