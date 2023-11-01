@@ -1,9 +1,7 @@
-POST http://localhost:9000/users/login
+GET https://duantn-backend.onrender.com/cart/
 Content-Type: application/json
 
 {
    
-    "email": "admin@gmail.com",
-    "password": "admin"
-
+    "userID":19
 }
