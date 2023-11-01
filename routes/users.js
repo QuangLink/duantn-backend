@@ -67,45 +67,43 @@ router.post("/register", (req, res) => {
     });
   });
 });
-//add user to users table without password if username or email existed return error
 router.post("/googleusers", (req, res) => {
   const { username, email } = req.body;
 
-  const queryCheckDup = "SELECT * FROM users WHERE username = ? OR email = ?";
-
+  const queryCheckDup = "SELECT userID, admin FROM users WHERE username = ? OR email = ?";
   db.query(queryCheckDup, [username, email], (err, result) => {
     if (err) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
 
-    const duplicateFields = [];
-    result.forEach((row) => {
-      if (row.username === username) {
-        duplicateFields.push("Username");
-        console.log("dup : username");
-      }
-      if (row.email === email) {
-        duplicateFields.push("Email");
-        console.log("dup : email");
-      }
-    });
+    if (result.length > 0) {
+      // Nếu username hoặc email đã tồn tại
+      const duplicateFields = result.map((row) => {
+        return row.username === username ? "Username" : "Email";
+      });
 
-    if (duplicateFields.length > 0) {
-      return res
-        .status(400)
-        .json({ error: "Duplicate entry for " + duplicateFields.join(", ") });
+      // Lấy userID từ dòng đầu tiên của kết quả truy vấn
+      const userId = result[0].userID;
+
+      return res.json({
+        error: "Duplicate entry for " + duplicateFields.join(", "),
+        payload: { userID: userId },
+      });
+    } else {
+      // Nếu không có trùng lặp, thêm bản ghi mới
+      const insertQuery = "INSERT INTO users (username, email) VALUES (?, ?)";
+      db.query(insertQuery, [username, email], (insertErr, insertResult) => {
+        if (insertErr) {
+          return res.status(500).json({ error: "Internal Server Error" });
+        }
+        return res.status(201).json({ message: "Record inserted successfully." });
+      });
     }
-
-    const insertQuery =
-      "INSERT INTO users (username, email) VALUES (?, ?)";
-    db.query(insertQuery, [username, email], (insertErr, insertResult) => {
-      if (insertErr) {
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-      return res.status(201).json({ message: "Record inserted successfully." });
-    });
   });
 });
+
+
+
 
 //login
 router.post("/login", (req, res) => {
