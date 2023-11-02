@@ -17,6 +17,8 @@ app.use(
       "https://quanglink.github.io",
       "http://quanglink.github.io",
       "https://duantn.onrender.com",
+      "https://www.jaguarshop.live",
+      "https://jaguarshop.live",
     ],
     headers: ["Content-Type"],
     credentials: true,
