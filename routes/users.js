@@ -70,7 +70,8 @@ router.post("/register", (req, res) => {
 router.post("/googleusers", (req, res) => {
   const { username, email } = req.body;
 
-  const queryCheckDup = "SELECT userID, admin FROM users WHERE username = ? OR email = ?";
+  const queryCheckDup =
+    "SELECT userID, admin FROM users WHERE username = ? OR email = ?";
   db.query(queryCheckDup, [username, email], (err, result) => {
     if (err) {
       return res.status(500).json({ error: "Internal Server Error" });
@@ -96,14 +97,13 @@ router.post("/googleusers", (req, res) => {
         if (insertErr) {
           return res.status(500).json({ error: "Internal Server Error" });
         }
-        return res.status(201).json({ message: "Record inserted successfully." });
+        return res
+          .status(201)
+          .json({ message: "Record inserted successfully." });
       });
     }
   });
 });
-
-
-
 
 //login
 router.post("/login", (req, res) => {

@@ -1,7 +1,3 @@
-GET https://duantn-backend.onrender.com/cart/
+GET http://localhost:9000/products/45
 Content-Type: application/json
 
-{
-   
-    "userID":19
-}
