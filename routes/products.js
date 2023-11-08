@@ -41,6 +41,23 @@ router.get("/search", (req, res) => {
 //lấy sản phẩm có tất cả entry
 //lấy sản phẩm dựa theo entry nhất định
 //get all variant  product by id
+router.get('/:id', (req, res) => {
+  const productId = req.params.id;
+  const query = `SELECT product.*, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
+  FROM product
+  LEFT JOIN feedback ON product.prodID = feedback.prodID
+  WHERE product.prodID = ?`;
+  db.query(query, [productId], (error, results) => {
+    if (error) throw error;
+
+    if (results.length > 0) {
+      res.json(results[0]);
+    } else {
+      res.status(404).send('Product not found');
+    }
+  });
+});
+
 
 router.get("/:id/:colorId?/:storageId?", (req, res) => {
   const productId = req.params.id;
@@ -66,15 +83,10 @@ LEFT JOIN
   color ON product_entry.colorID = color.colorID
 LEFT JOIN
   storage ON product_entry.storageID = storage.storageID
-LEFT JOIN
-  feedback ON product.prodID = feedback.prodID
--- Thêm các LEFT JOIN với các bảng liên quan khác ở đây
 WHERE
   product.prodID = ?
   AND (? IS NULL OR product_entry.colorID = ?)
   AND (? IS NULL OR product_entry.storageID = ?);
-
-
 `;
 
   db.query(

@@ -48,12 +48,30 @@ router.get("/:product", (req, res) => {
   } else {
     // Nếu productParam là một prodType
     const query = `
-      SELECT product.*, category.*, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
-      FROM product
-      JOIN category ON product.prodcatID = category.prodcatID
-      LEFT JOIN feedback ON product.prodID = feedback.prodID
-      WHERE product.prodType = ?
-      GROUP BY product.prodID`;
+    SELECT
+      *,
+      COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+      product.prodSale,
+      COALESCE(
+        (COALESCE(product_entry.prodPrice, product.prodPrice) + 
+        (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
+        COALESCE(product_entry.prodPrice, product.prodPrice)
+      ) AS prodPriceSale,
+      COALESCE(product_entry.prodID, product.prodID) AS prodID
+      -- Các trường khác mà bạn muốn lấy từ bảng product và product_entry
+    FROM
+      product
+    LEFT JOIN
+      product_entry ON product.prodID = product_entry.prodID
+    LEFT JOIN
+      color ON product_entry.colorID = color.colorID
+    LEFT JOIN
+      storage ON product_entry.storageID = storage.storageID
+    WHERE
+      product.prodType = ?
+    GROUP BY
+      product.prodID
+`;
 
     db.query(query, [productParam], (error, results) => {
       if (error) throw error;
@@ -89,7 +107,9 @@ router.get('/:product/:prodType', (req, res) => {
     }
   
     let query = `
-    SELECT product.*, category.*, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
+    SELECT
+    *, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg,
+    
     FROM product
     JOIN category ON product.prodcatID = category.prodcatID
     LEFT JOIN feedback ON product.prodID = feedback.prodID
