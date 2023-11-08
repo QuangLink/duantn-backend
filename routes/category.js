@@ -89,9 +89,10 @@ router.get('/:product/:prodType', (req, res) => {
     }
   
     let query = `
-      SELECT product.*, category.*
-      FROM product
-      JOIN category ON product.prodcatID = category.prodcatID
+    SELECT product.*, category.*, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
+    FROM product
+    JOIN category ON product.prodcatID = category.prodcatID
+    LEFT JOIN feedback ON product.prodID = feedback.prodID
       WHERE product.prodcatID = ?`;
   
     // Nếu prodTypeParam đã được chỉ định, thêm điều kiện cho prodType
