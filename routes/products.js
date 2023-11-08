@@ -55,7 +55,8 @@ router.get("/:id/:colorId?/:storageId?", (req, res) => {
       (COALESCE(product_entry.prodPrice, product.prodPrice) + 
        (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
       COALESCE(product_entry.prodPrice, product.prodPrice)
-  ) AS prodPriceSale
+  ) AS prodPriceSale,
+  COALESCE(product_entry.prodID, product.prodID) AS prodID
   -- Các trường khác mà bạn muốn lấy từ bảng product và product_entry
 FROM
   product
@@ -72,6 +73,7 @@ WHERE
   product.prodID = ?
   AND (? IS NULL OR product_entry.colorID = ?)
   AND (? IS NULL OR product_entry.storageID = ?);
+
 
 `;
 
