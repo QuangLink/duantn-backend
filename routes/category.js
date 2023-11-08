@@ -50,27 +50,29 @@ router.get("/:product", (req, res) => {
     const query = `
     SELECT
       *,
-      COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
-      product.prodSale,
-      COALESCE(
+
+    COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+    COALESCE(
         (COALESCE(product_entry.prodPrice, product.prodPrice) + 
-        (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
+         (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
         COALESCE(product_entry.prodPrice, product.prodPrice)
-      ) AS prodPriceSale,
-      COALESCE(product_entry.prodID, product.prodID) AS prodID
-      -- Các trường khác mà bạn muốn lấy từ bảng product và product_entry
-    FROM
-      product
+    ) AS prodPriceSale,
+    COALESCE(product_entry.prodID, product.prodID) AS prodID
+    , CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
+    -- Các trường khác mà bạn muốn lấy từ bảng product và product_entry
+  FROM
+    product
+    LEFT JOIN feedback ON product.prodID = feedback.prodID
     LEFT JOIN
-      product_entry ON product.prodID = product_entry.prodID
+    product_entry ON product.prodID = product_entry.prodID
     LEFT JOIN
-      color ON product_entry.colorID = color.colorID
-    LEFT JOIN
-      storage ON product_entry.storageID = storage.storageID
-    WHERE
-      product.prodType = ?
-    GROUP BY
-      product.prodID
+    color ON product_entry.colorID = color.colorID
+  LEFT JOIN
+    storage ON product_entry.storageID = storage.storageID
+
+  WHERE
+     product.prodType = ?
+     GROUP BY product.prodID
 `;
 
     db.query(query, [productParam], (error, results) => {
@@ -84,29 +86,29 @@ router.get("/:product", (req, res) => {
     });
   }
 });
-router.get('/:product/:prodType', (req, res) => {
-    const productParam = req.params.product;
-    const prodTypeParam = req.params.prodType;
-  
-    const prodcatIDs = {
-        apple: 1,
-        samsung: 2,
-        oppo: 3,
-        xiaomi: 4,
-        hp: 5,
-        asus: 6,
-        lenovo: 7,
-        acer: 8,
-    };
-  
-    const prodcatID = prodcatIDs[productParam];
-  
-    if (!prodcatID) {
-      res.status(404).send('Invalid product');
-      return;
-    }
-  
-    let query = `
+router.get("/:product/:prodType", (req, res) => {
+  const productParam = req.params.product;
+  const prodTypeParam = req.params.prodType;
+
+  const prodcatIDs = {
+    apple: 1,
+    samsung: 2,
+    oppo: 3,
+    xiaomi: 4,
+    hp: 5,
+    asus: 6,
+    lenovo: 7,
+    acer: 8,
+  };
+
+  const prodcatID = prodcatIDs[productParam];
+
+  if (!prodcatID) {
+    res.status(404).send("Invalid product");
+    return;
+  }
+
+  let query = `
     SELECT
     *, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg,
     
@@ -114,23 +116,23 @@ router.get('/:product/:prodType', (req, res) => {
     JOIN category ON product.prodcatID = category.prodcatID
     LEFT JOIN feedback ON product.prodID = feedback.prodID
       WHERE product.prodcatID = ?`;
-  
-    // Nếu prodTypeParam đã được chỉ định, thêm điều kiện cho prodType
-    if (prodTypeParam) {
-      query += ' AND product.prodType = ?';
-    }
-  
-    db.query(query, [prodcatID, prodTypeParam], (error, results) => {
-      if (error) throw error;
-  
-      if (results.length > 0) {
-        res.json(results);
-      } else {
-        res.status(404).send('No products found for the given prodcatID and prodType');
-      }
-    });
-  });
-  
 
+  // Nếu prodTypeParam đã được chỉ định, thêm điều kiện cho prodType
+  if (prodTypeParam) {
+    query += " AND product.prodType = ?";
+  }
+
+  db.query(query, [prodcatID, prodTypeParam], (error, results) => {
+    if (error) throw error;
+
+    if (results.length > 0) {
+      res.json(results);
+    } else {
+      res
+        .status(404)
+        .send("No products found for the given prodcatID and prodType");
+    }
+  });
+});
 
 module.exports = router;
