@@ -7,11 +7,30 @@ router.options("/", (req, res) => {
 });
 router.get("/:userID", (req, res) => {
   const { userID } = req.params;
-  const sql = `SELECT cart.*, users.*, product.*
-               FROM cart
-               LEFT JOIN users ON cart.userID = users.userID
-               LEFT JOIN product ON cart.prodID = product.prodID
-               WHERE cart.userID = ${userID} AND product.prodID = cart.prodID;`;
+  const sql = `SELECT *,
+  COALESCE(product_entry.prodPrice, product.prodPrice) as prodPrice,
+  COALESCE(product_entry.prodID, product.prodID) as prodID,
+  COALESCE(product_entry.prodImg, product.prodImg) as prodImg,
+  COALESCE(
+    (COALESCE(product_entry.prodPrice, product.prodPrice) + 
+     (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
+    COALESCE(product_entry.prodPrice, product.prodPrice)
+    
+) AS prodPriceSale
+  FROM cart
+  LEFT JOIN users ON cart.userID = users.userID
+  LEFT JOIN product ON cart.prodID = product.prodID
+  LEFT JOIN product_entry 
+      ON product.prodID = product_entry.prodID
+      AND (cart.colorID IS NULL OR cart.colorID = product_entry.colorID) 
+      AND (cart.storageID IS NULL OR cart.storageID = product_entry.storageID
+          OR (cart.storageID IS NULL AND product_entry.storageID IS NULL))
+  LEFT JOIN color ON product_entry.colorID = color.colorID
+  LEFT JOIN storage ON product_entry.storageID = storage.storageID
+  WHERE cart.userID = ${userID} 
+    AND product.prodID = cart.prodID;
+  
+  `;
   db.query(sql, (err, result) => {
     if (err) throw err;
     res.send(result);
@@ -48,22 +67,25 @@ router.put("/minus/:cartID", (req, res) => {
 });
 //thêm sản phẩm vào giỏ hàng dựa trên prodID và userID
 router.post("/", (req, res) => {
-  const { prodID, userID } = req.body;
+  const { prodID, userID, colorID, storageID } = req.body;
+  console.log(req.body);
   if (!userID) {
     res.status(500).send("Missing userID");
     return;
   }
-  const checkSql = `SELECT * FROM cart WHERE prodID = ${prodID} AND userID = ${userID};`;
+  const checkSql = `SELECT * FROM cart WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID} AND storageID = ${storageID};`;
   db.query(checkSql, (err, result) => {
     if (err) throw err;
     if (result.length > 0) {
-      const updateSql = `UPDATE cart SET quantity = quantity + 1 WHERE prodID = ${prodID} AND userID = ${userID};`;
+      const updateSql = `UPDATE cart 
+      SET quantity = quantity + 1 
+      WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID} AND storageID = ${storageID};`;
       db.query(updateSql, (err, result) => {
         if (err) throw err;
         res.send(result);
       });
     } else {
-      const insertSql = `INSERT INTO cart (prodID, userID, quantity) VALUES (${prodID}, ${userID}, 1);`;
+      const insertSql = `INSERT INTO cart (prodID, userID,colorID,storageID, quantity) VALUES (${prodID}, ${userID},${colorID},${storageID}, 1);`;
       db.query(insertSql, (err, result) => {
         if (err) throw err;
         res.send(result);

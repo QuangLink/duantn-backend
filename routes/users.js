@@ -10,7 +10,10 @@ require("dotenv").config();
 //get all users in users table
 
 router.get("/", (req, res) => {
-  const query = "SELECT * FROM users";
+  const query = `SELECT *
+  FROM users
+  LEFT JOIN user_address ON users.userID = user_address.userID;
+  `;
   db.query(query, (error, results) => {
     if (error) throw error;
     res.json(results);
@@ -150,7 +153,7 @@ router.put("/address", (req, res) => {
   const { username, firstname, lastname, state, flat, street, city, mobile } =
     req.body;
   const query =
-    "UPDATE users SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ?, mobile = ? WHERE username = ?";
+    "UPDATE user_address SET firstname = ?, lastname = ?, state = ?, flat = ?, street = ?, city = ?, mobile = ? WHERE userID = (SELECT userID FROM users WHERE username = ?)";
   db.query(
     query,
     [firstname, lastname, state, flat, street, city, mobile, username],
@@ -162,9 +165,31 @@ router.put("/address", (req, res) => {
     }
   );
 });
+router.post("/address", (req, res) => {
+  const { username, firstname, lastname, state, flat, street, city, mobile } =
+    req.body;
+
+  const query =
+    "INSERT INTO user_address (firstname, lastname, state, flat, street, city, mobile, userID) VALUES (?, ?, ?, ?, ?, ?, ?, (SELECT userID FROM users WHERE username = ?))";
+  db.query(
+    query,
+    [firstname, lastname, state, flat, street, city, mobile, username],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+      return res.status(201).json({ message: "Record created successfully." });
+    }
+  );
+});
+
 router.get("/address/:username", (req, res) => {
   const { username } = req.params;
-  const query = "SELECT * FROM users WHERE username = ?";
+  const query = `SELECT *
+  FROM users
+  LEFT JOIN user_address ON users.userID = user_address.userID
+  WHERE username = ?;
+  `;
   db.query(query, [username], (err, result) => {
     if (err) {
       return res.status(500).json({ error: "Internal Server Error" });
@@ -172,14 +197,14 @@ router.get("/address/:username", (req, res) => {
     if (result.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
-    return res.status(200).json(result[0]);
+    return res.status(200).json(result);
   });
 });
 router.delete("/address/:username", (req, res) => {
   const { username } = req.params;
-  const query = `UPDATE users 
-  SET firstname = "", lastname = "", state = "", flat = "", street = "", city = "" , mobile =""
-  WHERE username = ?`;
+  const query = `DELETE FROM user_address 
+  WHERE userID = (SELECT userID FROM users WHERE username = ?);
+  `;
   db.query(query, [username], (err, result) => {
     if (err) {
       return res.status(500).json({ error: "Internal Server Error" });

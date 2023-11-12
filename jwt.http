@@ -1,3 +1,1 @@
-GET http://localhost:9000/products/45
-Content-Type: application/json
-
+GET http://localhost:9000/users/address/?username=Quang%20Linh

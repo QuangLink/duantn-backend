@@ -52,6 +52,7 @@ router.get("/:product", (req, res) => {
       *,
 
     COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+    COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
     COALESCE(
         (COALESCE(product_entry.prodPrice, product.prodPrice) + 
          (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
