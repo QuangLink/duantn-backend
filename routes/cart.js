@@ -94,9 +94,9 @@ router.post("/", (req, res) => {
   });
 });
 //xóa sản phẩm trong giỏ hàng dựa trên prodID
-router.delete("/:prodID", (req, res) => {
-  const prodID = req.params.prodID;
-  const sql = `DELETE FROM cart WHERE prodID = ${prodID};`;
+router.delete("/:cartID", (req, res) => {
+  const cartID = req.params.cartID;
+  const sql = `DELETE FROM cart WHERE cartID = ${cartID} ;`;
   db.query(sql, (err, result) => {
     if (err) throw err;
     res.send(result);
