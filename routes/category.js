@@ -110,17 +110,36 @@ router.get("/:product/:prodType", (req, res) => {
   }
 
   let query = `
-    SELECT
-    *, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg,
-    
+    SELECT product.*, category.*, CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
     FROM product
     JOIN category ON product.prodcatID = category.prodcatID
     LEFT JOIN feedback ON product.prodID = feedback.prodID
-      WHERE product.prodcatID = ?`;
+    WHERE product.prodcatID = ?
+    GROUP BY product.prodID`;
 
-  // Nếu prodTypeParam đã được chỉ định, thêm điều kiện cho prodType
+  // If prodTypeParam is specified, add conditions for prodType
   if (prodTypeParam) {
-    query += " AND product.prodType = ?";
+    query = `
+      SELECT
+        *,
+        COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+        COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
+        COALESCE(
+          (COALESCE(product_entry.prodPrice, product.prodPrice) + 
+          (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
+          COALESCE(product_entry.prodPrice, product.prodPrice)
+        ) AS prodPriceSale,
+        COALESCE(product_entry.prodID, product.prodID) AS prodID,
+        CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
+      FROM
+        product
+        LEFT JOIN feedback ON product.prodID = feedback.prodID
+        LEFT JOIN product_entry ON product.prodID = product_entry.prodID
+        LEFT JOIN color ON product_entry.colorID = color.colorID
+        LEFT JOIN storage ON product_entry.storageID = storage.storageID
+      WHERE
+        product.prodcatID = ? AND product.prodType = ?
+      GROUP BY product.prodID`;
   }
 
   db.query(query, [prodcatID, prodTypeParam], (error, results) => {
@@ -129,11 +148,10 @@ router.get("/:product/:prodType", (req, res) => {
     if (results.length > 0) {
       res.json(results);
     } else {
-      res
-        .status(404)
-        .send("No products found for the given prodcatID and prodType");
+      res.status(404).send("No products found for the given prodcatID and prodType");
     }
   });
 });
+
 
 module.exports = router;

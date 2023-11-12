@@ -187,7 +187,7 @@ router.get("/address/:username", (req, res) => {
   const { username } = req.params;
   const query = `SELECT *
   FROM users
-  LEFT JOIN user_address ON users.userID = user_address.userID
+  INNER  JOIN user_address ON users.userID = user_address.userID
   WHERE username = ?;
   `;
   db.query(query, [username], (err, result) => {
