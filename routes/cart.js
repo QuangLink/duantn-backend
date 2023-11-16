@@ -70,7 +70,7 @@ router.post("/", (req, res) => {
   const { prodID, userID, colorID, storageID } = req.body;
   console.log(req.body);
   if (!userID) {
-    res.status(500).send("Missing userID");
+    res.status(400).send("Missing userID");
     return;
   }
   const checkSql = `SELECT * FROM cart WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID} AND storageID = ${storageID};`;

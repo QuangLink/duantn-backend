@@ -1,0 +1,6 @@
+PUT http://localhost:9000/order/update
+Content-Type: application/json
+
+{
+    "orderCode": "85ad6c00-8225-11ee-a58f-95142e9a0b77"
+}
