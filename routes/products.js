@@ -3,10 +3,33 @@ const router = express.Router();
 const db = require("./../models/database");
 
 router.get("/", (req, res) => {
-  const query = `SELECT product.*, category.*
-  FROM product
-  LEFT JOIN category ON product.prodcatID = category.prodcatID;  
-  `;
+  const query = `
+  SELECT 
+    product.*, 
+    category.*, 
+    product_entry.*, 
+    COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+    COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
+    COALESCE(
+        (COALESCE(product_entry.prodPrice, product.prodPrice) + 
+         (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
+        COALESCE(product_entry.prodPrice, product.prodPrice)
+    ) AS prodPriceSale,
+    COALESCE(product_entry.prodID, product.prodID) AS prodID,
+    CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
+FROM 
+    product
+LEFT JOIN
+    product_entry ON product.prodID = product_entry.prodID
+LEFT JOIN
+    category ON product.prodcatID = category.prodcatID
+LEFT JOIN
+    feedback ON product.prodID = feedback.prodID
+GROUP BY 
+    product.prodID;
+
+`;
+
   db.query(query, (error, results) => {
     if (error) throw error;
     res.json(results);
@@ -50,7 +73,7 @@ router.get("/search", (req, res) => {
 //   COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
 //   product.prodSale,
 //   COALESCE(
-//       (COALESCE(product_entry.prodPrice, product.prodPrice) + 
+//       (COALESCE(product_entry.prodPrice, product.prodPrice) +
 //        (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
 //       COALESCE(product_entry.prodPrice, product.prodPrice)
 //   ) AS prodPriceSale,
@@ -78,7 +101,6 @@ router.get("/search", (req, res) => {
 //   });
 // });
 
-
 router.get("/:id/:colorId?/:storageId?", (req, res) => {
   const productId = req.params.id;
   const colorId = req.params.colorId || null;
@@ -103,6 +125,9 @@ LEFT JOIN
   product_entry ON product.prodID = product_entry.prodID
 LEFT JOIN
   color ON product_entry.colorID = color.colorID
+  
+  LEFT JOIN
+    category ON product.prodcatID = category.prodcatID
 LEFT JOIN
   storage ON product_entry.storageID = storage.storageID
 WHERE
@@ -119,13 +144,10 @@ AND (? IS NULL OR product_entry.storageID = ?);
       if (error) throw error;
       else if (results.length > 1) {
         res.json(results);
-      } 
-      else if (results.length > 0) {
+      } else if (results.length > 0) {
         res.json(results);
-       console.log(results.length);
-      } 
-      
-      else {
+        console.log(results.length);
+      } else {
         res.status(404).send("Product not found");
       }
     }

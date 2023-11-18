@@ -11,7 +11,7 @@ router.get("/sale", (req, res) => {
   });
 });
 router.get("/:product", (req, res) => {
-  const productParam = req.params.product;
+  const productParam = req.params.product.toLowerCase();
 
   const prodcatIDs = {
     apple: 1,
@@ -88,7 +88,7 @@ router.get("/:product", (req, res) => {
   }
 });
 router.get("/:product/:prodType", (req, res) => {
-  const productParam = req.params.product;
+  const productParam = req.params.product.toLowerCase;
   const prodTypeParam = req.params.prodType;
 
   const prodcatIDs = {
