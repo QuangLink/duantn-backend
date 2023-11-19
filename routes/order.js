@@ -8,6 +8,7 @@ let $ = require("jquery");
 const request = require("request");
 const moment = require("moment");
 const db = require("./../models/database");
+const mailer = require("../utils/mailer");
 router.get("/", function (req, res, next) {
   res.render("orderlist", { title: "Danh sách đơn hàng" });
 });
@@ -26,115 +27,123 @@ router.get("/refund", function (req, res, next) {
   res.render("refund", { title: "Hoàn tiền giao dịch thanh toán" });
 });
 
-router.post("/create_payment_url", function (req, res, next) {
-
-    process.env.TZ = "Asia/Ho_Chi_Minh";
-
-
-      // Assuming you want to store the orderCode from the results
-      const orderCode = "cb839b70-843f-11ee-a716-8b7925bd8ea5"; // Adjust this based on your database schema
-
-      let date = new Date();
-      let createDate = moment(date).format("YYYYMMDDHHmmss");
-      let orderId = moment(date).format("DDHHmmss");
-
-      let ipAddr =
-        req.headers["x-forwarded-for"] ||
-        req.connection.remoteAddress ||
-        req.socket.remoteAddress ||
-        req.connection.socket.remoteAddress;
-
-      let config = require("config");
-
-      let tmnCode = config.get("vnp_TmnCode");
-      let secretKey = config.get("vnp_HashSecret");
-      let vnpUrl = config.get("vnp_Url");
-      let returnUrl = config.get("vnp_ReturnUrl");
-      let amount = req.body.amount;
-      let bankCode = req.body.bankCode;
-
-      let locale = req.body.language;
-      if (locale === null || locale === "") {
-        locale = "vn";
-      }
-      let currCode = "VND";
-      let vnp_Params = {};
-      vnp_Params["vnp_Version"] = "2.1.0";
-      vnp_Params["vnp_Command"] = "pay";
-      vnp_Params["vnp_TmnCode"] = tmnCode;
-      vnp_Params["vnp_Locale"] = locale;
-      vnp_Params["vnp_CurrCode"] = currCode;
-      vnp_Params["vnp_TxnRef"] = orderId;
-      vnp_Params["vnp_OrderInfo"] = orderCode;
-      vnp_Params["vnp_OrderType"] = "other";
-      vnp_Params["vnp_Amount"] = amount * 100;
-      vnp_Params["vnp_ReturnUrl"] = returnUrl;
-      vnp_Params["vnp_IpAddr"] = ipAddr;
-      vnp_Params["vnp_CreateDate"] = createDate;
-      if (bankCode !== null && bankCode !== "") {
-        vnp_Params["vnp_BankCode"] = bankCode;
-      }
-
-
-      res.send(vnpUrl);
-    });
 router.get("/vnpay_return", async function (req, res, next) {
+  try {
+    const vnp_Params = req.query;
+    const { vnp_SecureHash, vnp_SecureHashType, ...otherParams } = vnp_Params;
+    const sortedParams = sortObject(otherParams);
+    const { vnp_TmnCode, vnp_HashSecret } = require("config");
+    const querystring = require("qs");
+    const signData = querystring.stringify(sortedParams, { encode: false });
+    const crypto = require("crypto");
+    const hmac = crypto.createHmac("sha512", vnp_HashSecret);
+    const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+
+    console.log("Received vnp_SecureHash:", vnp_SecureHash);
+    console.log("Generated signed hash:", signed);
+
+    if (vnp_SecureHash === signed) {
+      const orderCode = otherParams.vnp_OrderInfo;
+    // Lấy chuỗi ngày thanh toán
+const payDateString = otherParams.vnp_PayDate;
+
+// Chuyển đổi chuỗi thành đối tượng Date
+const payDate = new Date(
+  `${payDateString.substring(0, 4)}-${payDateString.substring(4, 6)}-${payDateString.substring(6, 8)}T${payDateString.substring(8, 10)}:${payDateString.substring(10, 12)}:${payDateString.substring(12, 14)}`
+);
+
+// Định dạng lại ngày thanh toán
+const formattedPayDate = payDate.toLocaleDateString("vi-VN", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+      const updateQuery = `UPDATE \`order\` SET orderStatus = "Đã thanh toán" WHERE orderCode = ?`;
+
       try {
-        const vnp_Params = req.query;
+        await db.query(updateQuery, [orderCode]);
+
+        const subject = "Đặt hàng thành công";
+        const content = `
+        <!DOCTYPE html>
+<html>
+<head>
+</head>
+<body style="background-color: white; color: black;">
+    <div style="background-color: red; color: white; padding: 10px; text-align: center;">
+        <h1>Thanks for your order!!!</h1>
+    </div>
     
-        const { vnp_SecureHash, vnp_SecureHashType, ...otherParams } = vnp_Params;
-    
-        const sortedParams = sortObject(otherParams);
-    
-        const { vnp_TmnCode, vnp_HashSecret } = require("config");
-    
-        const querystring = require("qs");
-        const signData = querystring.stringify(sortedParams, { encode: false });
-        const crypto = require("crypto");
-        const hmac = crypto.createHmac("sha512", vnp_HashSecret);
-        const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-    
-        console.log("Received vnp_SecureHash:", vnp_SecureHash);
-        console.log("Generated signed hash:", signed);
-    
-        if (vnp_SecureHash === signed) {
-          const orderCode = otherParams.vnp_OrderInfo;
-          console.log("Order Code:", orderCode);
-    
-          const updateQuery = `UPDATE \`order\` SET orderStatus = "Đã thanh toán" WHERE orderCode = ?`;
-    
-          // Use parameterized query to avoid SQL injection
-          try {
-            await db.query(updateQuery, [orderCode]);
-           
-  
-            res.render("success", {
-              code: otherParams.vnp_ResponseCode,
-              vnp_Amount: otherParams.vnp_Amount,
-              vnp_TxnRef: otherParams.vnp_TxnRef,
-              vnp_OrderInfo: otherParams.vnp_OrderInfo,
-              vnp_TransactionNo: otherParams.vnp_TransactionNo,
-              vnp_ResponseCode: otherParams.vnp_ResponseCode,
-              vnp_TmnCode: otherParams.vnp_TmnCode,
-              vnp_PayDate: otherParams.vnp_PayDate,
-              vnp_BankCode: otherParams.vnp_BankCode,
-            });
-          } catch (updateError) {
-            console.error("Database update error:", updateError);
-            throw updateError;
-          }
-        } else {
-          console.log("Invalid vnp_SecureHash");
-          res.render("success", { code: "97" });
+    <div style="margin-top: 20px; font-family: Arial, sans-serif;">
+    <p style="font-size: 18px;">Cảm ơn bạn đã đặt hàng tại <a href="Jaguarshop.live" style="color: #1a0dab; text-decoration: none;">jaguarshop.live</a>, đây là thông tin đơn hàng đã thanh toán</p>
+    <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 20px;">
+        <h2 style="margin-top: 0;">Thông tin đơn hàng</h2>
+        <p><strong>Địa chỉ giao hàng:</strong> {order.shipping_address}</p>
+    </div>
+    <div style="background-color: #f8f9fa; padding: 15px;">
+        <h2 style="margin-top: 0;">Thông tin thanh toán</h2>
+        <p><strong>Ngân hàng:</strong> ${otherParams.vnp_BankCode}</p>
+        <p><strong>Số tiền:</strong> ${parseInt(
+          otherParams.vnp_Amount / 100
+        ).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}</p>
+        <p><strong>Mã giao dịch:</strong> ${otherParams.vnp_TxnRef}</p>
+        <p><strong>Mã đơn hàng:</strong> ${otherParams.vnp_OrderInfo}</p>
+        <p><strong>Ngày thanh toán:</strong> ${formattedPayDate}</p>
+    </div>
+</div>
+</body>
+</html>
+
+        
+      
+        `;
+        const to = "thieulinh2508@gmail.com";
+
+        try {
+          const result = await mailer.sendMail(to, subject, content);
+          console.log("Mail sent:", result);
+
+          // Render success page
+          res.render("success", {
+            code: otherParams.vnp_ResponseCode,
+            vnp_Amount: otherParams.vnp_Amount,
+            vnp_TxnRef: otherParams.vnp_TxnRef,
+            vnp_OrderInfo: otherParams.vnp_OrderInfo,
+            vnp_TransactionNo: otherParams.vnp_TransactionNo,
+            vnp_ResponseCode: otherParams.vnp_ResponseCode,
+            vnp_TmnCode: otherParams.vnp_TmnCode,
+            vnp_PayDate: otherParams.vnp_PayDate,
+            vnp_BankCode: otherParams.vnp_BankCode,
+          });
+        } catch (mailerError) {
+          console.error("Error sending mail:", mailerError);
+
+          // Render error page for mail error
+          res.render("error", { error: "Error sending mail" });
         }
-      } catch (error) {
-        console.error("Error processing VNPay return:", error);
-        res.render("error", { error });
+      } catch (updateError) {
+        console.error("Database update error:", updateError);
+
+        // Render error page for database update error
+        res.render("error", { error: "Database update error" });
       }
-    });
-    
-    
-    
+    } else {
+      console.log("Invalid vnp_SecureHash");
+
+      // Render error page for invalid vnp_SecureHash
+      res.render("error", { error: "Invalid vnp_SecureHash" });
+    }
+  } catch (error) {
+    console.error("Error processing VNPay return:", error);
+
+    // Render general error page
+    res.render("error", { error });
+  }
+});
 
 router.get("/vnpay_ipn", function (req, res, next) {
   let vnp_Params = req.query;
