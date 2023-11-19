@@ -9,6 +9,7 @@ const request = require("request");
 const moment = require("moment");
 const db = require("./../models/database");
 const mailer = require("../utils/mailer");
+const e = require("express");
 router.get("/", function (req, res, next) {
   res.render("orderlist", { title: "Danh sách đơn hàng" });
 });
@@ -29,6 +30,7 @@ router.get("/refund", function (req, res, next) {
 
 router.get("/vnpay_return", async function (req, res, next) {
   try {
+    
     const vnp_Params = req.query;
     const { vnp_SecureHash, vnp_SecureHashType, ...otherParams } = vnp_Params;
     const sortedParams = sortObject(otherParams);
@@ -44,71 +46,20 @@ router.get("/vnpay_return", async function (req, res, next) {
 
     if (vnp_SecureHash === signed) {
       const orderCode = otherParams.vnp_OrderInfo;
-    // Lấy chuỗi ngày thanh toán
-const payDateString = otherParams.vnp_PayDate;
-
-// Chuyển đổi chuỗi thành đối tượng Date
-const payDate = new Date(
-  `${payDateString.substring(0, 4)}-${payDateString.substring(4, 6)}-${payDateString.substring(6, 8)}T${payDateString.substring(8, 10)}:${payDateString.substring(10, 12)}:${payDateString.substring(12, 14)}`
-);
-
-// Định dạng lại ngày thanh toán
-const formattedPayDate = payDate.toLocaleDateString("vi-VN", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-});
+      // Lấy chuỗi ngày thanh toán
+      
 
       const updateQuery = `UPDATE \`order\` SET orderStatus = "Đã thanh toán" WHERE orderCode = ?`;
 
       try {
         await db.query(updateQuery, [orderCode]);
 
-        const subject = "Đặt hàng thành công";
-        const content = `
-        <!DOCTYPE html>
-<html>
-<head>
-</head>
-<body style="background-color: white; color: black;">
-    <div style="background-color: red; color: white; padding: 10px; text-align: center;">
-        <h1>Thanks for your order!!!</h1>
-    </div>
-    
-    <div style="margin-top: 20px; font-family: Arial, sans-serif;">
-    <p style="font-size: 18px;">Cảm ơn bạn đã đặt hàng tại <a href="Jaguarshop.live" style="color: #1a0dab; text-decoration: none;">jaguarshop.live</a>, đây là thông tin đơn hàng đã thanh toán</p>
-    <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 20px;">
-        <h2 style="margin-top: 0;">Thông tin đơn hàng</h2>
-        <p><strong>Địa chỉ giao hàng:</strong> {order.shipping_address}</p>
-    </div>
-    <div style="background-color: #f8f9fa; padding: 15px;">
-        <h2 style="margin-top: 0;">Thông tin thanh toán</h2>
-        <p><strong>Ngân hàng:</strong> ${otherParams.vnp_BankCode}</p>
-        <p><strong>Số tiền:</strong> ${parseInt(
-          otherParams.vnp_Amount / 100
-        ).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}</p>
-        <p><strong>Mã giao dịch:</strong> ${otherParams.vnp_TxnRef}</p>
-        <p><strong>Mã đơn hàng:</strong> ${otherParams.vnp_OrderInfo}</p>
-        <p><strong>Ngày thanh toán:</strong> ${formattedPayDate}</p>
-    </div>
-</div>
-</body>
-</html>
-
-        
-      
-        `;
-        const to = "thieulinh2508@gmail.com";
-
+  
         try {
-          const result = await mailer.sendMail(to, subject, content);
-          console.log("Mail sent:", result);
+          
 
           // Render success page
-          res.render("success", {
+          res.json({
             code: otherParams.vnp_ResponseCode,
             vnp_Amount: otherParams.vnp_Amount,
             vnp_TxnRef: otherParams.vnp_TxnRef,
@@ -373,6 +324,75 @@ router.post("/refund", function (req, res, next) {
   );
 });
 
+function UpdateQuantities(req, res) {
+  try {
+    if (req.body && req.body.userID) {
+      const userID = req.body.userID;
+      const uuid = uuidv1(); // Generate a UUID for the orderCode
+      console.log(uuid); // Display the UUID in the console
+
+      // Create a transaction to ensure both operations succeed or fail together
+      db.beginTransaction((err) => {
+        if (err) {
+          throw err;
+        }
+
+        // SQL query to insert data into `order`
+        const updateSQL = `
+        UPDATE product
+        JOIN cart ON product.prodID = cart.prodID
+        SET product.QTY = product.QTY - cart.quantity
+        WHERE cart.userID = ${userID} AND (cart.colorID IS NULL OR cart.storageID IS NULL);
+        `;
+        const updateSQL2 = `
+        UPDATE product_entry
+        JOIN cart ON product_entry.prodID = cart.prodID
+        SET product_entry.QTY = product_entry.QTY - cart.quantity
+        WHERE cart.userID = ${userID}
+          AND cart.colorID IS NOT NULL
+          AND cart.storageID IS NOT NULL
+          AND product_entry.colorID = cart.colorID
+          AND product_entry.storageID = cart.storageID;
+
+        `;
+
+        // Execute the insert query
+        db.query(updateSQL, (err, result) => {
+          if (err) {
+            return db.rollback(() => {
+              throw err;
+            });
+          }
+
+          // Execute the delete query
+          db.query(updateSQL2, (err, result) => {
+            if (err) {
+              return db.rollback(() => {
+                throw err;
+              });
+            }
+
+            // Commit the transaction if both queries succeed
+            db.commit((err) => {
+              if (err) {
+                return db.rollback(() => {
+                  throw err;
+                });
+              }
+
+              res.send(result);
+            });
+          });
+        });
+      });
+    } else {
+      res.status(400).json({ error: "Missing userID in request body" });
+    }
+  } catch (error) {
+    console.error("An error occurred:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
 function sortObject(obj) {
   let sorted = {};
   let str = [];

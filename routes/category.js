@@ -20,7 +20,8 @@ COALESCE(product_entry.prodID, product.prodID) AS prodID
 FROM
 product
 LEFT JOIN product_entry ON product.prodID = product_entry.prodID
-WHERE prodSale <> 0`; // Thêm điều kiện WHERE
+WHERE prodSale <> 0 AND product.QTY > 0
+;`; // Thêm điều kiện WHERE
   db.query(query, (error, results) => {
     if (error) throw error;
     res.json(results);
@@ -50,8 +51,9 @@ router.get("/:product", (req, res) => {
       FROM product
       JOIN category ON product.prodcatID = category.prodcatID
       LEFT JOIN feedback ON product.prodID = feedback.prodID
-      WHERE product.prodcatID = ?
-      GROUP BY product.prodID`;
+      WHERE product.prodcatID = ? AND product.QTY > 0
+      GROUP BY product.prodID
+      ;`;
     db.query(query, [prodcatID], (error, results) => {
       if (error) throw error;
 
@@ -88,8 +90,9 @@ router.get("/:product", (req, res) => {
     storage ON product_entry.storageID = storage.storageID
 
   WHERE
-     product.prodType = ?
+     product.prodType = ? AND product.QTY > 0
      GROUP BY product.prodID
+     ;
 `;
 
     db.query(query, [productParam], (error, results) => {
@@ -145,7 +148,9 @@ router.get("/:product/:prodType", (req, res) => {
         LEFT JOIN storage ON product_entry.storageID = storage.storageID
       WHERE
     WHERE product.prodcatID = ?
-    GROUP BY product.prodID`;
+    AND product.QTY > 0
+    GROUP BY product.prodID
+    ;`;
 
   // If prodTypeParam is specified, add conditions for prodType
   if (prodTypeParam) {
@@ -169,7 +174,9 @@ router.get("/:product/:prodType", (req, res) => {
         LEFT JOIN storage ON product_entry.storageID = storage.storageID
       WHERE
         product.prodcatID = ? AND product.prodType = ?
-      GROUP BY product.prodID`;
+        AND product.QTY > 0
+      GROUP BY product.prodID
+      ;`;
   }
 
   db.query(query, [prodcatID, prodTypeParam], (error, results) => {

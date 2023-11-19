@@ -11,6 +11,7 @@ router.get("/:userID", (req, res) => {
   COALESCE(product_entry.prodPrice, product.prodPrice) as prodPrice,
   COALESCE(product_entry.prodID, product.prodID) as prodID,
   COALESCE(product_entry.prodImg, product.prodImg) as prodImg,
+  COALESCE(product_entry.QTY, product.QTY) as QTY,
   COALESCE(
     (COALESCE(product_entry.prodPrice, product.prodPrice) + 
      (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
@@ -40,6 +41,16 @@ router.get("/:userID", (req, res) => {
 router.put("/plus/:cartID", (req, res) => {
   const cartID = req.params.cartID;
   const sql = `UPDATE cart SET quantity = quantity + 1 WHERE cartID = ${cartID};`;
+  db.query(sql, (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+});
+// router set value in quantity by cartID
+router.put("/set/:cartID", (req, res) => {
+  const cartID = req.params.cartID;
+  const { quantity } = req.body;
+  const sql = `UPDATE cart SET quantity = ${quantity} WHERE cartID = ${cartID};`;
   db.query(sql, (err, result) => {
     if (err) throw err;
     res.send(result);

@@ -25,9 +25,10 @@ LEFT JOIN
     category ON product.prodcatID = category.prodcatID
 LEFT JOIN
     feedback ON product.prodID = feedback.prodID
+WHERE product.QTY > 0 OR product_entry.QTY > 0
 GROUP BY 
     product.prodID;
-
+  
 `;
 
   db.query(query, (error, results) => {
@@ -48,7 +49,7 @@ router.get("/search", (req, res) => {
     });
   } else {
     // Nếu prodName được cung cấp, tìm sản phẩm theo tên
-    const query = "SELECT * FROM product WHERE prodName LIKE ?";
+    const query = "SELECT * FROM product WHERE prodName LIKE ? WHERE product.QTY > 0;";
     db.query(query, [`%${prodName}%`], (error, results) => {
       if (error) throw error;
 
@@ -132,8 +133,10 @@ LEFT JOIN
   storage ON product_entry.storageID = storage.storageID
 WHERE
   product.prodID = ?
+
   AND (? IS NULL OR product_entry.colorID = ?)
-AND (? IS NULL OR product_entry.storageID = ?);
+  AND (? IS NULL OR product_entry.storageID = ?)
+  ;
 
 `;
 

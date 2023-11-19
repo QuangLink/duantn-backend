@@ -6,7 +6,73 @@ const moment = require("moment");
 ;
 let $ = require("jquery");
 const request = require("request");
-
+const { await } = require("await");
+router.post("/cod", async function (req, res, next) {
+  try {
+    console.log(req.body);
+    if (req.body && req.body.userID) {
+      const userID = req.body.userID;
+      const uuid = uuidv1(); // Generate a UUID for the orderCode
+      console.log(uuid); // Display the UUID in the console
+      // Create a transaction to ensure both operations succeed or fail together
+      db.beginTransaction(async (err) => {
+        if (err) {
+          throw err;
+        }
+        try {
+          // SQL query to insert data into `order`
+          const insertSQL = `    INSERT INTO \`order\` (
+            orderCode,
+            userID,
+            addressID,
+            prodID,
+            quantity,
+            cartID,
+            payment
+          )
+          SELECT
+            "${uuid}",
+            ${userID},
+            user_address.addressID,
+            cart.prodID,
+            cart.quantity,
+            cart.cartID, 
+            "COD"
+          FROM cart
+          JOIN user_address ON user_address.userID = cart.userID
+          WHERE cart.userID = ${userID};
+          `;
+          // SQL query to delete data from `cart`
+          const deleteSQL = `DELETE FROM cart WHERE userID = ${userID};`;
+          // Execute the insert query
+          await db.query(insertSQL);
+          // Execute the delete query
+          await db.query(deleteSQL);
+          // Commit the transaction if both queries succeed
+          db.commit((commitErr) => {
+            if (commitErr) {
+              return db.rollback(() => {
+                throw commitErr;
+              });
+            }
+            // Assuming you want to store the orderCode from the results
+            const orderCode = uuid; // Adjust this based on your database schema
+            // You can use orderCode as needed in the rest of your logic
+            res.send(orderCode);
+          });
+        } catch (queryErr) {
+          await db.rollback();
+          throw queryErr;
+        }
+      });
+    } else {
+      res.status(400).json({ error: "Missing userID in request body" });
+    }
+  } catch (error) {
+    console.error("Error creating payment URL:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 router.post("/create_payment_url", async function (req, res, next) {
   try {
     console.log(req.body);
@@ -30,20 +96,21 @@ router.post("/create_payment_url", async function (req, res, next) {
               userID,
               prodID,
               quantity,
-              cartID
+              cartID,
+              payment
             )
             SELECT
               "${uuid}",
               ${userID},
               cart.prodID,
               cart.quantity,
-              cart.cartID
+              cart.cartID,
+              "Banking"
             FROM cart WHERE cart.userID = ${userID};
           `;
-
+          
           // SQL query to delete data from `cart`
           const deleteSQL = `DELETE FROM cart WHERE userID = ${userID};`;
-
           // Execute the insert query
           await db.query(insertSQL);
 
@@ -131,76 +198,7 @@ router.post("/create_payment_url", async function (req, res, next) {
 });
 
 //post cart to order
-router.post("/", (req, res) => {
-  try {
-    if (req.body && req.body.userID) {
-      const userID = req.body.userID;
-      const uuid = uuidv1(); // Generate a UUID for the orderCode
-      console.log(uuid); // Display the UUID in the console
 
-      // Create a transaction to ensure both operations succeed or fail together
-      db.beginTransaction((err) => {
-        if (err) {
-          throw err;
-        }
-
-        // SQL query to insert data into `order`
-        const insertSQL = `INSERT INTO \`order\` (
-                    orderCode,
-                    userID,
-                    prodID,
-                    quantity,
-                    cartID
-                )
-                SELECT
-                    "${uuid}",
-                    ${userID},
-                    cart.prodID,
-                    cart.quantity,
-                    cart.cartID
-                FROM cart WHERE cart.userID = ${userID};`;
-
-        // SQL query to delete data from `cart`
-        const deleteSQL = `DELETE FROM cart
-                WHERE userID = ${userID};`;
-
-        // Execute the insert query
-        db.query(insertSQL, (err, result) => {
-          if (err) {
-            return db.rollback(() => {
-              throw err;
-            });
-          }
-
-          // Execute the delete query
-          db.query(deleteSQL, (err, result) => {
-            if (err) {
-              return db.rollback(() => {
-                throw err;
-              });
-            }
-
-            // Commit the transaction if both queries succeed
-            db.commit((err) => {
-              if (err) {
-                return db.rollback(() => {
-                  throw err;
-                });
-              }
-
-              res.send(result);
-            });
-          });
-        });
-      });
-    } else {
-      res.status(400).json({ error: "Missing userID in request body" });
-    }
-  } catch (error) {
-    console.error("An error occurred:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 
 //get all order by orderCode
 router.get("/", (req, res) => {

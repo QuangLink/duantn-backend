@@ -88,10 +88,10 @@ router.post("/googleusers", (req, res) => {
 
       // Lấy userID từ dòng đầu tiên của kết quả truy vấn
       const userId = result[0].userID;
-
+      const email = result[0].email;
       return res.json({
         error: "Duplicate entry for " + duplicateFields.join(", "),
-        payload: { userID: userId },
+        payload: { userID: userId, email: email },
       });
     } else {
       // Nếu không có trùng lặp, thêm bản ghi mới
