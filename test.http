@@ -1,6 +1,12 @@
-POST http://localhost:9000/orders/update
+POST http://localhost:9000/wishlist/
+
 Content-Type: application/json
 
 {
-    "userID": "26"
+    "userID": "26",
+    "prodID": "45",
+    "colorID": "2",
+    "storageID": "2"
 }
+
+

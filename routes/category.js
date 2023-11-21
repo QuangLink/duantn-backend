@@ -28,7 +28,8 @@ WHERE prodSale <> 0 AND product.QTY > 0
     res.json(results);
   });
 });
-router.get("/:product", (req, res) => {
+
+router.get("/:product/:product?", (req, res) => {
   const productParam = req.params.product.toLowerCase();
 
   const prodcatIDs = {
@@ -72,6 +73,7 @@ router.get("/:product", (req, res) => {
 
     COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
     COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
+    COALESCE(product_entry.QTY, product.QTY) AS QTY,
     COALESCE(
         (COALESCE(product_entry.prodPrice, product.prodPrice) + 
          (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
@@ -106,91 +108,6 @@ router.get("/:product", (req, res) => {
       }
     });
   }
-});
-router.get("/:product/:prodType", (req, res) => {
-  const productParam = req.params.product.toLowerCase;
-  const prodTypeParam = req.params.prodType;
-
-  const prodcatIDs = {
-    apple: 1,
-    samsung: 2,
-    oppo: 3,
-    xiaomi: 4,
-    hp: 5,
-    asus: 6,
-    lenovo: 7,
-    acer: 8,
-  };
-
-  const prodcatID = prodcatIDs[productParam];
-
-  if (!prodcatID) {
-    res.status(404).send("Invalid product");
-    return;
-  }
-
-  let query = `
-   SELECT
-        *,
-        COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
-        COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
-        COALESCE(
-          (COALESCE(product_entry.prodPrice, product.prodPrice) + 
-          (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
-          COALESCE(product_entry.prodPrice, product.prodPrice)
-        ) AS prodPriceSale,
-        COALESCE(product_entry.prodID, product.prodID) AS prodID,
-        CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
-      FROM
-        product
-        LEFT JOIN feedback ON product.prodID = feedback.prodID
-        LEFT JOIN product_entry ON product.prodID = product_entry.prodID
-        LEFT JOIN color ON product_entry.colorID = color.colorID
-        LEFT JOIN storage ON product_entry.storageID = storage.storageID
-      WHERE
-    WHERE product.prodcatID = ?
-    AND product.QTY > 0
-    GROUP BY product.prodID
-    ;`;
-
-  // If prodTypeParam is specified, add conditions for prodType
-  if (prodTypeParam) {
-    query = `
-      SELECT
-        *,
-        COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
-        COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
-        COALESCE(
-          (COALESCE(product_entry.prodPrice, product.prodPrice) + 
-          (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
-          COALESCE(product_entry.prodPrice, product.prodPrice)
-        ) AS prodPriceSale,
-        COALESCE(product_entry.prodID, product.prodID) AS prodID,
-        CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg
-      FROM
-        product
-        LEFT JOIN feedback ON product.prodID = feedback.prodID
-        LEFT JOIN product_entry ON product.prodID = product_entry.prodID
-        LEFT JOIN color ON product_entry.colorID = color.colorID
-        LEFT JOIN storage ON product_entry.storageID = storage.storageID
-      WHERE
-        product.prodcatID = ? AND product.prodType = ?
-        AND product.QTY > 0
-      GROUP BY product.prodID
-      ;`;
-  }
-
-  db.query(query, [prodcatID, prodTypeParam], (error, results) => {
-    if (error) throw error;
-
-    if (results.length > 0) {
-      res.json(results);
-    } else {
-      res
-        .status(404)
-        .send("No products found for the given prodcatID and prodType");
-    }
-  });
 });
 
 module.exports = router;

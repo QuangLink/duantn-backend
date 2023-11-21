@@ -40,6 +40,7 @@ const orderRouter = require("./routes/orders");
 const feedbackRouter = require("./routes/feedback");
 const vnpayRouter = require("./routes/order");
 const mailRouter = require("./routes/mail");
+const wishRouter = require("./routes/wishlist");
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "jade");
@@ -64,6 +65,7 @@ app.use("/orders", orderRouter);
 app.use("/order", vnpayRouter);
 app.use("/feedback", feedbackRouter);
 app.use("/mail", mailRouter);
+app.use("/wishlist", wishRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   var err = new Error("Not Found");
