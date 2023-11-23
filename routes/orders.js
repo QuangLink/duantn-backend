@@ -59,7 +59,8 @@ router.post("/cod", async function (req, res, next) {
                 addressID,
                 prodID,
                 quantity,
-            
+                colorID,
+                storageID,
                 payment,
                 infoID
               )
@@ -69,7 +70,8 @@ router.post("/cod", async function (req, res, next) {
                 user_address.addressID,
                 cart.prodID,
                 cart.quantity,
-      
+                cart.colorID,
+                cart.storageID,
                 'COD',
                 ?
               FROM cart
@@ -161,7 +163,8 @@ router.post("/create_payment_url", async function (req, res, next) {
                 addressID,
                 prodID,
                 quantity,
-           
+                colorID,
+                storageID,
                 payment,
                 infoID
               )
@@ -171,6 +174,8 @@ router.post("/create_payment_url", async function (req, res, next) {
                 user_address.addressID,
                 cart.prodID,
                 cart.quantity,
+                cart.colorID,
+                cart.storageID,
              
                 'COD',
                 ?
@@ -215,11 +220,18 @@ router.post("/create_payment_url", async function (req, res, next) {
 
 //get all order by orderCode
 router.get("/", (req, res) => {
-  const sql = `SELECT \`order\`.*, product.*, users.*
-                 FROM \`order\`
-                 LEFT JOIN product ON \`order\`.prodID = product.prodID
-                 LEFT JOIN users ON \`order\`.userID = users.userID
-                 ORDER BY orderCode;`;
+  const sql = `SELECT *,
+               COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+               COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
+               COALESCE(product_entry.QTY, product.QTY) AS QTY
+               FROM \`order\`
+               LEFT JOIN product ON \`order\`.prodID = product.prodID
+               LEFT JOIN users ON \`order\`.userID = users.userID
+               LEFT JOIN order_info ON \`order\`.infoID = order_info.infoID
+               LEFT JOIN product_entry ON \`order\`.prodID = product_entry.prodID AND \`order\`.colorID = product_entry.colorID AND \`order\`.storageID = product_entry.storageID
+                LEFT JOIN color ON \`order\`.colorID = color.colorID
+                LEFT JOIN storage ON \`order\`.storageID = storage.storageID
+               ORDER BY orderCode;`;
   db.query(sql, (err, result) => {
     if (err) throw err;
     res.send(result);
@@ -228,11 +240,17 @@ router.get("/", (req, res) => {
 //get all order by userID
 router.get("/user/:userID", (req, res) => {
   const userID = req.params.userID;
-  const sql = `SELECT *
-                 FROM \`order\`
-                 LEFT JOIN product ON \`order\`.prodID = product.prodID
-                 LEFT JOIN users ON \`order\`.userID = users.userID
-                 LEFT JOIN order_info ON \`order\`.infoID = order_info.infoID
+  const sql = `SELECT *,
+  COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+  COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
+  COALESCE(product_entry.QTY, product.QTY) AS QTY
+  FROM \`order\`
+  LEFT JOIN product ON \`order\`.prodID = product.prodID
+  LEFT JOIN users ON \`order\`.userID = users.userID
+  LEFT JOIN order_info ON \`order\`.infoID = order_info.infoID
+  LEFT JOIN product_entry ON \`order\`.prodID = product_entry.prodID AND \`order\`.colorID = product_entry.colorID AND \`order\`.storageID = product_entry.storageID
+   LEFT JOIN color ON \`order\`.colorID = color.colorID
+   LEFT JOIN storage ON \`order\`.storageID = storage.storageID
                  WHERE \`order\`.userID = ${userID}
                  ORDER BY orderCode;`;
   db.query(sql, (err, result) => {
