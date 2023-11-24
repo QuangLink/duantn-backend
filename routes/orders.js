@@ -6,9 +6,19 @@ const moment = require("moment");
 let $ = require("jquery");
 const request = require("request");
 const { await } = require("await");
-const c = require("config");
-
-router.get("/test", (req, res) => {
+const config = require("config");
+router.put("/update-order/:infoID", (req, res) => {
+  console.log(req.body);
+  console.log(req.params);
+  const infoID = req.params.infoID;
+  const status = req.body.status;
+  const sql = `UPDATE order_info SET orderStatus = '${status}' WHERE infoID = ${infoID}`;
+  db.query(sql, (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+});
+router.get("/total", (req, res) => {
   const sql = `SELECT * FROM order_info;`;
   db.query(sql, (err, result) => {
     if (err) throw err;

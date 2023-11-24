@@ -1,7 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const db = require("./../models/database");
+router.get("/total", (req, res) => {
+  const query = `
+  -- Retrieve all columns from the 'product' table
+  SELECT prodID, QTY, NULL AS entryID FROM product
+  
+  -- Combine with all columns from the 'product_entry' table
+  UNION ALL
+  
+  -- Retrieve all columns from the 'product_entry' table
+  SELECT prodID, QTY, entryID FROM product_entry;
+`;
 
+  db.query(query, (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+});
 router.get("/", (req, res) => {
   const query = `
   SELECT 

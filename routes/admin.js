@@ -4,7 +4,17 @@ const db = require("./../models/database");
 const { authenToken } = require("./middleware");
 
 router.use(authenToken);
-
+router.put("/update-order/:infoID", (req, res) => {
+  console.log(req.body);
+  console.log(req.params);
+  const infoID = req.params.infoID;
+  const status = req.body.status;
+  const sql = `UPDATE order_info SET orderStatus = '${status}' WHERE infoID = ${infoID}`;
+  db.query(sql, (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+});
 router.get("/", authenToken, (req, res) => {
   if (req.payload.admin !== 1) {
     return res.status(403).json({ message: "Not authorized" });
