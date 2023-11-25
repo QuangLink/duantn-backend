@@ -28,73 +28,7 @@ router.get("/refund", function (req, res, next) {
   res.render("refund", { title: "Hoàn tiền giao dịch thanh toán" });
 });
 
-router.get("/vnpay_return", async function (req, res, next) {
-  try {
-    
-    const vnp_Params = req.query;
-    const { vnp_SecureHash, vnp_SecureHashType, ...otherParams } = vnp_Params;
-    const sortedParams = sortObject(otherParams);
-    const { vnp_TmnCode, vnp_HashSecret } = require("config");
-    const querystring = require("qs");
-    const signData = querystring.stringify(sortedParams, { encode: false });
-    const crypto = require("crypto");
-    const hmac = crypto.createHmac("sha512", vnp_HashSecret);
-    const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-    console.log("Received vnp_SecureHash:", vnp_SecureHash);
-    console.log("Generated signed hash:", signed);
-
-    if (vnp_SecureHash === signed) {
-      const orderCode = otherParams.vnp_OrderInfo;
-      // Lấy chuỗi ngày thanh toán
-      
-
-      const updateQuery = `UPDATE \`order\` SET orderStatus = "Đã thanh toán" WHERE orderCode = ?`;
-
-      try {
-        await db.query(updateQuery, [orderCode]);
-
-  
-        try {
-          
-
-          // Render success page
-          res.json({
-            code: otherParams.vnp_ResponseCode,
-            vnp_Amount: otherParams.vnp_Amount,
-            vnp_TxnRef: otherParams.vnp_TxnRef,
-            vnp_OrderInfo: otherParams.vnp_OrderInfo,
-            vnp_TransactionNo: otherParams.vnp_TransactionNo,
-            vnp_ResponseCode: otherParams.vnp_ResponseCode,
-            vnp_TmnCode: otherParams.vnp_TmnCode,
-            vnp_PayDate: otherParams.vnp_PayDate,
-            vnp_BankCode: otherParams.vnp_BankCode,
-          });
-        } catch (mailerError) {
-          console.error("Error sending mail:", mailerError);
-
-          // Render error page for mail error
-          res.render("error", { error: "Error sending mail" });
-        }
-      } catch (updateError) {
-        console.error("Database update error:", updateError);
-
-        // Render error page for database update error
-        res.render("error", { error: "Database update error" });
-      }
-    } else {
-      console.log("Invalid vnp_SecureHash");
-
-      // Render error page for invalid vnp_SecureHash
-      res.render("error", { error: "Invalid vnp_SecureHash" });
-    }
-  } catch (error) {
-    console.error("Error processing VNPay return:", error);
-
-    // Render general error page
-    res.render("error", { error });
-  }
-});
 
 router.get("/vnpay_ipn", function (req, res, next) {
   let vnp_Params = req.query;
