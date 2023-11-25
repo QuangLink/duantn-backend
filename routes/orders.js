@@ -71,7 +71,7 @@ router.post("/cod", async function (req, res, next) {
                 quantity,
                 colorID,
                 storageID,
-                payment,
+             
                 infoID
               )
               SELECT
@@ -82,7 +82,7 @@ router.post("/cod", async function (req, res, next) {
                 cart.quantity,
                 cart.colorID,
                 cart.storageID,
-                'COD',
+              
                 ?
               FROM cart
               JOIN user_address ON user_address.userID = cart.userID
@@ -175,7 +175,7 @@ router.post("/create_payment_url", async function (req, res, next) {
                 quantity,
                 colorID,
                 storageID,
-                payment,
+           
                 infoID
               )
               SELECT
@@ -186,8 +186,7 @@ router.post("/create_payment_url", async function (req, res, next) {
                 cart.quantity,
                 cart.colorID,
                 cart.storageID,
-             
-                'COD',
+            
                 ?
               FROM cart
               JOIN user_address ON user_address.userID = cart.userID
