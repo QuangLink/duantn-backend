@@ -7,18 +7,23 @@ const { authenToken } = require("./middleware");
 const bcrypt = require("bcrypt");
 
 require("dotenv").config();
-//get all users in users table
-
 router.get("/", (req, res) => {
-  const query = `SELECT *
-  FROM users
-  LEFT JOIN user_address ON users.userID = user_address.userID;
+  const query = `
+    SELECT 
+      users.userID, 
+      users.username, 
+      users.email,
+      user_address.*,
+      coalesce(user_address.userID, users.userID) as userID
+    FROM users
+    LEFT JOIN user_address ON users.userID = user_address.userID;
   `;
   db.query(query, (error, results) => {
     if (error) throw error;
     res.json(results);
   });
 });
+
 
 // Register
 router.post("/register", (req, res) => {

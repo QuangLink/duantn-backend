@@ -13,13 +13,11 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
+      "http://localhost:3001",
       "http://jaguarshop.me",
       "https://jaguarshop.me",
       "http://www.jaguarshop.me",
       "https://www.jaguarshop.me",
-      "https://quanglink.github.io",
-      "http://quanglink.github.io",
-      "https://duantn.onrender.com",
       "https://www.jaguarshop.live",
       "https://jaguarshop.live",
     ],
