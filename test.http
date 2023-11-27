@@ -1,12 +1,9 @@
-POST http://localhost:9000/wishlist/
+PUT  http://localhost:9000/users/resetpassword
 
 Content-Type: application/json
 
 {
-    "userID": "26",
-    "prodID": "45",
-    "colorID": "2",
-    "storageID": "2"
+    "email": "thieulinh2508@gmail.com"
 }
 
 

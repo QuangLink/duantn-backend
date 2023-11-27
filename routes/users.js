@@ -5,6 +5,8 @@ const jwt = require("jsonwebtoken");
 const session = require("express-session");
 const { authenToken } = require("./middleware");
 const bcrypt = require("bcrypt");
+const mailer = require("../utils/mailer");
+const { parse } = require("path");
 
 require("dotenv").config();
 router.get("/", (req, res) => {
@@ -23,7 +25,6 @@ router.get("/", (req, res) => {
     res.json(results);
   });
 });
-
 
 // Register
 router.post("/register", (req, res) => {
@@ -58,6 +59,28 @@ router.post("/register", (req, res) => {
       if (err) {
         return res.status(500).json({ error: "Internal Server Error" });
       }
+      bcrypt
+        .hash(email, parseInt(process.env.BYCRYPT_SALT_ROUND))
+        .then((hashedEmail) => {
+          console.log(
+            `${process.env.APP_URL}/users/verify?email=${email}& token=${hashedEmail}`
+          );
+          mailer
+            .sendMail(
+              email,
+              "Verify your email",
+              `
+        <h1>Verify your email</h1>
+        <p>Click <a href="${process.env.APP_URL}/verify?email=${email}&token=${hashedEmail}">here</a> to verify your email.</p>
+        `
+            )
+            .then((result) => {
+              console.log(result);
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        });
       const insertQuery =
         "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
       db.query(
@@ -73,6 +96,87 @@ router.post("/register", (req, res) => {
         }
       );
     });
+  });
+});
+
+//verify email with token
+router.get("/verify", (req, res) => {
+  const { email, token } = req.query;
+  bcrypt.compare(email, token).then((result) => {
+    if (result) {
+      const query = "UPDATE users SET verified = 1 WHERE email = ?";
+      db.query(query, [email], (err, result) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).json({ error: "Lỗi server" });
+        }
+        return res.status(200).json({ message: "Xác nhận email thành công" });
+      });
+    } else {
+      return res.status(400).json({ error: "Link xác nhận không hợp lệ" });
+    }
+  });
+});
+//send email reset password
+router.post("/forgot", function (req, res, next) {
+  const { email } = req.body;
+  //check if email exists in database
+  const query = "SELECT * FROM users WHERE email = ? and verified = 1";
+  db.query(query, [email], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Email not found" });
+    }
+    else{
+      bcrypt.hash(email, parseInt(process.env.BYCRYPT_SALT_ROUND)).then((hash) => {
+        console.log(
+          `${process.env.APP_URL}/users/resetpass?email=${email}& token=${hash}`
+        );
+        mailer
+          .sendMail(
+            email,
+            "Reset your password",
+            `
+        <h1>Reset your password</h1>
+        <p>Click <a href="${process.env.APP_URL}/resetpass?email=${email}&token=${hash}">here</a> to reset your password.</p>
+        `
+          )
+          .then((result) => {
+            return res.status(200).json({ error: "Email sent" });
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      });
+    }
+  });
+  //send email
+  
+});
+//update password with token to reset password
+router.put("/resetpass", (req, res) => {
+  const { email, token, password } = req.body;
+  bcrypt.compare(email, token).then((result) => {
+    if (result) {
+      bcrypt.hash(password, 10, (err, hash) => {
+        if (err) {
+          return res.status(500).json({ error: "Internal Server Error" });
+        }
+        const updateQuery = "UPDATE users SET password = ? WHERE email = ?";
+        db.query(updateQuery, [hash, email], (updateErr, updateResult) => {
+          if (updateErr) {
+            return res.status(500).json({ error: "Internal Server Error" });
+          }
+          return res
+            .status(201)
+            .json({ message: "Đổi mật khẩu thành công" });
+        });
+      });
+    } else {
+      return res.status(400).json({ error: "Link xác nhận không hợp lệ" });
+    }
   });
 });
 router.post("/googleusers", (req, res) => {
@@ -100,7 +204,7 @@ router.post("/googleusers", (req, res) => {
       });
     } else {
       // Nếu không có trùng lặp, thêm bản ghi mới
-      const insertQuery = "INSERT INTO users (username, email) VALUES (?, ?)";
+      const insertQuery = "INSERT INTO users (username, email,verified) VALUES (?, ?,1)";
       db.query(insertQuery, [username, email], (insertErr, insertResult) => {
         if (insertErr) {
           return res.status(500).json({ error: "Internal Server Error" });
@@ -149,6 +253,87 @@ router.post("/login", (req, res) => {
       console.log(token);
 
       res.json({ token, payload });
+    });
+  });
+});
+//change password router based on userID and old pasword
+router.put("/password", (req, res) => {
+  const { userID, oldPassword, newPassword } = req.body;
+  const query = "SELECT * FROM users WHERE userID = ?";
+  db.query(query, [userID], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const user = results[0];
+    bcrypt.compare(oldPassword, user.password, (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+      if (!result) {
+        return res
+          .status(401)
+          .json({ error: "Sai mật khẩu, hãy kiểm tra lại" });
+      }
+      bcrypt.hash(newPassword, 10, (err, hash) => {
+        if (err) {
+          return res.status(500).json({ error: "Internal Server Error" });
+        }
+        const updateQuery = "UPDATE users SET password = ? WHERE userID = ?";
+        db.query(updateQuery, [hash, userID], (updateErr, updateResult) => {
+          if (updateErr) {
+            return res.status(500).json({ error: "Internal Server Error" });
+          }
+          return res.status(201).json({ message: "Đổi mật khẩu thành công" });
+        });
+      });
+    });
+  });
+});
+//resetpassword with random password and send an email to email in body using nodemailer
+router.put("/resetpassword", (req, res) => {
+  const { email } = req.body;
+  const randomPassword = Math.random().toString(36).slice(-8);
+  bcrypt.hash(randomPassword, 10, (err, hash) => {
+    if (err) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+    const updateQuery = "UPDATE users SET password = ? WHERE email = ?";
+    db.query(updateQuery, [hash, email], (updateErr, updateResult) => {
+      if (updateErr) {
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+      const subject = "Reset password";
+      const content = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+      </head>
+      <body style="background-color: white; color: black;">
+      <div style="background-color: red; color: white; padding: 10px; text-align: center;">
+        <h1>Reset password</h1>
+      </div>
+      
+      <div style="margin-top: 20px; font-family: Arial, sans-serif;">
+      <p style="font-size: 18px;">Mật khẩu mới của bạn là: ${randomPassword}</p>
+      </div>
+      </body>
+      </html>
+      `;
+      const to = email;
+      mailer
+        .sendMail(to, subject, content)
+        .then((result) => {
+          res.json(result);
+        })
+        .catch((error) => {
+          res.json(error);
+        });
     });
   });
 });

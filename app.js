@@ -20,6 +20,7 @@ app.use(
       "https://www.jaguarshop.me",
       "https://www.jaguarshop.live",
       "https://jaguarshop.live",
+      "https://duantn-test.vercel.app/",
     ],
     headers: ["Content-Type"],
     credentials: true,
