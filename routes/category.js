@@ -29,7 +29,53 @@ WHERE prodSale <> 0 AND product.QTY > 0
   });
 });
 
-router.get("/:product/:product?", (req, res) => {
+router.get("/:product/:prodType", (req, res) => {
+  const productParam = req.params.product;
+  const prodTypeParam = req.params.prodType;
+
+  const prodcatIDs = {
+    apple: 1,
+    samsung: 2,
+    oppo: 3,
+    xiaomi: 4,
+    hp: 5,
+    asus: 6,
+    lenovo: 7,
+    acer: 8,
+  };
+
+  const prodcatID = prodcatIDs[productParam];
+
+  if (!prodcatID) {
+    res.status(404).send("Invalid product");
+    return;
+  }
+
+  let query = `
+    SELECT product.*, category.*
+    FROM product
+    JOIN category ON product.prodcatID = category.prodcatID
+    WHERE product.prodcatID = ?`;
+
+  // Nếu prodTypeParam đã được chỉ định, thêm điều kiện cho prodType
+  if (prodTypeParam) {
+    query += " AND product.prodType = ?";
+  }
+
+  db.query(query, [prodcatID, prodTypeParam], (error, results) => {
+    if (error) throw error;
+
+    if (results.length > 0) {
+      res.json(results);
+    } else {
+      res
+        .status(404)
+        .send("No products found for the given prodcatID and prodType");
+    }
+  });
+});
+
+router.get("/:product", (req, res) => {
   const productParam = req.params.product.toLowerCase();
 
   const prodcatIDs = {
@@ -108,5 +154,4 @@ router.get("/:product/:product?", (req, res) => {
     });
   }
 });
-
 module.exports = router;
