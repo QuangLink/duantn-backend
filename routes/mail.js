@@ -1,37 +1,49 @@
 var express = require("express");
 var router = express.Router();
 const mailer = require("../utils/mailer");
-router.get("/", function (req, res, next) {
-  res.render("contact", { title: "Contact" });
-});
+const db = require("../models/database");
 //send to mail some example content
 router.post("/", function (req, res, next) {
-  const { email, code, vnp_Amount,vnp_TxnRef,vnp_BankCode,vnp_PayDate,vnp_ResponseCode,vnp_TransactionNo,vnp_OrderInfo } = req.body;
+
+    db.query(
+      `SELECT *
+      FROM user_address
+      LEFT JOIN users ON users.userID = user_address.userID
+      WHERE users.email = "admin@gmail.com"`
+    );
+    console.log(result)
+
+
+  const {
+    email,
+    vnp_Amount,
+    vnp_TxnRef,
+    vnp_BankCode,
+    vnp_PayDate,
+    vnp_OrderInfo,
+  } = req.body;
   const payDateString = vnp_PayDate;
 
-      // Chuyển đổi chuỗi thành đối tượng Date
-      const payDate = new Date(
-        `${payDateString.substring(0, 4)}-${payDateString.substring(
-          4,
-          6
-        )}-${payDateString.substring(6, 8)}T${payDateString.substring(
-          8,
-          10
-        )}:${payDateString.substring(10, 12)}:${payDateString.substring(
-          12,
-          14
-        )}`
-      );
+  // Chuyển đổi chuỗi thành đối tượng Date
+  const payDate = new Date(
+    `${payDateString.substring(0, 4)}-${payDateString.substring(
+      4,
+      6
+    )}-${payDateString.substring(6, 8)}T${payDateString.substring(
+      8,
+      10
+    )}:${payDateString.substring(10, 12)}:${payDateString.substring(12, 14)}`
+  );
 
-      // Định dạng lại ngày thanh toán
-      const formattedPayDate = payDate.toLocaleDateString("vi-VN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
+  // Định dạng lại ngày thanh toán
+  const formattedPayDate = payDate.toLocaleDateString("vi-VN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
   const subject = "Đặt hàng thành công";
   const content = `
   <!DOCTYPE html>
@@ -52,9 +64,10 @@ router.post("/", function (req, res, next) {
 <div style="background-color: #f8f9fa; padding: 15px;">
   <h2 style="margin-top: 0;">Thông tin thanh toán</h2>
   <p><strong>Ngân hàng:</strong> ${vnp_BankCode}</p>
-  <p><strong>Số tiền:</strong> ${parseInt(
-    vnp_Amount / 100
-  ).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}</p>
+  <p><strong>Số tiền:</strong> ${parseInt(vnp_Amount / 100).toLocaleString(
+    "vi-VN",
+    { style: "currency", currency: "VND" }
+  )}</p>
   <p><strong>Mã giao dịch:</strong> ${vnp_TxnRef}</p>
   <p><strong>Mã đơn hàng:</strong> ${vnp_OrderInfo}</p>
   <p><strong>Ngày thanh toán:</strong> ${formattedPayDate}</p>
@@ -62,11 +75,8 @@ router.post("/", function (req, res, next) {
 </div>
 </body>
 </html>
-
-  
-
   `;
- console.log(email)
+  console.log(email);
   const to = email;
   mailer
     .sendMail(to, subject, content)
@@ -80,8 +90,6 @@ router.post("/", function (req, res, next) {
 
 //send to mail some example content
 router.post("/resetpass", function (req, res, next) {
- 
-  
   const subject = "Đặt lại mật khẩu";
   const content = `
   <!DOCTYPE html>
@@ -102,9 +110,10 @@ router.post("/resetpass", function (req, res, next) {
 <div style="background-color: #f8f9fa; padding: 15px;">
   <h2 style="margin-top: 0;">Thông tin thanh toán</h2>
   <p><strong>Ngân hàng:</strong> ${vnp_BankCode}</p>
-  <p><strong>Số tiền:</strong> ${parseInt(
-    vnp_Amount / 100
-  ).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}</p>
+  <p><strong>Số tiền:</strong> ${parseInt(vnp_Amount / 100).toLocaleString(
+    "vi-VN",
+    { style: "currency", currency: "VND" }
+  )}</p>
   <p><strong>Mã giao dịch:</strong> ${vnp_TxnRef}</p>
   <p><strong>Mã đơn hàng:</strong> ${vnp_OrderInfo}</p>
   <p><strong>Ngày thanh toán:</strong> ${formattedPayDate}</p>
@@ -112,11 +121,8 @@ router.post("/resetpass", function (req, res, next) {
 </div>
 </body>
 </html>
-
-  
-
   `;
- console.log(email)
+  console.log(email);
   const to = email;
   mailer
     .sendMail(to, subject, content)

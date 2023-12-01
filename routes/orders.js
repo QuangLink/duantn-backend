@@ -29,110 +29,100 @@ router.get("/total", (req, res) => {
 });
 
 router.post("/cod", async function (req, res, next) {
+  console.log(req.body.userCart);
+  const userCart = req.body.userCart;
+
   try {
     if (req.body && req.body.userID) {
       const userID = req.body.userID;
       const uuid = uuidv1(); // Generate a UUID for the orderCode
       const amount = req.body.amount;
+
       // Start a transaction
-      db.beginTransaction((err) => {
+      db.beginTransaction(async (err) => {
         if (err) {
           throw err;
         }
 
-        const testSQL = `INSERT INTO \`order_info\` (orderCode, payment, totalPay) VALUES (?, 'COD', ?)`;
+        try {
+          const insertInfo = `INSERT INTO \`order_info\` (orderCode, payment, totalPay, userID) VALUES (?, 'COD', ?, ?)`;
 
-        // Insert into order_info
-        db.query(testSQL, [uuid, amount], (err, result) => {
-          if (err) {
-            return db.rollback(() => {
-              throw err;
-            });
-          }
+          // Insert into order_info
+          await db.query(insertInfo, [uuid, amount, userID]);
 
           // Get infoID from the inserted order_info
-          const sql = `SELECT infoID FROM order_info WHERE orderCode = ?`;
-          db.query(sql, [uuid], (err, result) => {
+          const getInfoID = () => {
+            return new Promise((resolve, reject) => {
+              const sql = `SELECT infoID FROM order_info WHERE orderCode = ?`;
+              db.query(sql, [uuid], (err, result) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(result[0].infoID);
+                }
+              });
+            });
+          };
+
+          // Get infoID
+          const infoID = await getInfoID();
+
+          // Insert into order table
+          const orderSql = `INSERT INTO \`order\` (prodID, quantity, colorID, storageID, infoID) VALUES (?, ?, ?, ?, ?)`;
+          for (const item of userCart) {
+            await db.query(orderSql, [
+              item.prodID,
+              item.quantity,
+              item.colorID,
+              item.storageID,
+              infoID,
+            ]);
+          }
+
+          // Commit the transaction
+          db.commit((err) => {
             if (err) {
               return db.rollback(() => {
                 throw err;
               });
             }
-
-            const infoID = result[0].infoID;
-
-            // Insert into order table
-            const insertSQL = `
-              INSERT INTO \`order\` (
-              
-                userID,
-                addressID,
-                prodID,
-                quantity,
-                colorID,
-                storageID,
-             
-                infoID
-              )
-              SELECT
-         
-                ?,
-                user_address.addressID,
-                cart.prodID,
-                cart.quantity,
-                cart.colorID,
-                cart.storageID,
-              
-                ?
-              FROM cart
-              JOIN user_address ON user_address.userID = cart.userID
-              WHERE cart.userID = ?;
-            `;
-
-            // Execute the insert query
-            db.query(insertSQL, [userID, infoID, userID], (err, result) => {
-              if (err) {
-                return db.rollback(() => {
-                  throw err;
-                });
-              }
-
-              // Delete from cart
-              const deleteSQL = "DELETE FROM cart WHERE userID = ?";
-              db.query(deleteSQL, [userID], (err, result) => {
-                if (err) {
-                  return db.rollback(() => {
-                    throw err;
-                  });
-                }
-
-                // Commit the transaction if all queries succeed
-                db.commit((commitErr) => {
-                  if (commitErr) {
-                    return db.rollback(() => {
-                      throw commitErr;
-                    });
-                  }
-
-                  // Send the orderCode as a response
-                  res.send(uuid);
-                });
-              });
-            });
+            console.log("Transaction Complete.");
+            res.status(200).json({ success: true });
           });
-        });
+        } catch (error) {
+          console.error("Error creating COD order:", error);
+          // Rollback on error
+          db.rollback(() => {
+            res.status(500).send("Internal Server Error");
+          });
+        }
       });
     } else {
-      res.status(400).json({ error: "Missing userID in request body" });
+      res.status(400).json({ error: "Missing userID in the request body" });
     }
   } catch (error) {
-    console.error("Error creating COD order:", error);
+    console.error("Error:", error);
     res.status(500).send("Internal Server Error");
   }
 });
+const queryAsync = (sql, values) => {
+  return new Promise((resolve, reject) => {
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+};
+
 router.post("/create_payment_url", async function (req, res, next) {
+  const userCart = req.body.userCart;
+
   try {
     console.log(req.body);
+
     if (req.body && req.body.userID) {
       const userID = req.body.userID;
       const uuid = uuidv1(); // Generate a UUID for the orderCode
@@ -147,137 +137,111 @@ router.post("/create_payment_url", async function (req, res, next) {
 
           // Insert into order_info
           const insertOrderInfoSQL = `
-            INSERT INTO \`order_info\` (orderCode, payment, totalPay)
-            VALUES (?, 'Banking', ?)
+            INSERT INTO \`order_info\` (orderCode, payment, totalPay, userID)
+            VALUES (?, 'Banking', ?, ?)
           `;
-          db.query(insertOrderInfoSQL, [uuid, amount], (err, result) => {
-            if (err) {
+
+          const orderInfoResult = await queryAsync(insertOrderInfoSQL, [
+            uuid,
+            amount,
+            userID,
+          ]);
+          const infoID = orderInfoResult.insertId;
+
+          // Insert into order table
+          const orderSql = `INSERT INTO \`order\` (prodID, quantity, colorID, storageID, infoID) VALUES (?, ?, ?, ?, ?)`;
+
+          for (const item of userCart) {
+            await queryAsync(orderSql, [
+              item.prodID,
+              item.quantity,
+              item.colorID,
+              item.storageID,
+              infoID,
+            ]);
+          }
+
+          // Execute the insert query
+
+          // Commit the transaction if both queries succeed
+          db.commit((commitErr) => {
+            if (commitErr) {
               return db.rollback(() => {
-                throw err;
+                throw commitErr;
               });
             }
 
-            // Get infoID from the inserted order_info
-            const selectInfoIDSQL = `SELECT infoID FROM order_info WHERE orderCode = ?`;
-            db.query(selectInfoIDSQL, [uuid], (err, result) => {
-              if (err) {
-                return db.rollback(() => {
-                  throw err;
-                });
-              }
+            // Generate the payment URL logic
+            let date = new Date();
+            let createDate = moment(date).format("YYYYMMDDHHmmss");
+            let orderId = moment(date).format("DDHHmmss");
 
-              const infoID = result[0].infoID;
+            let ipAddr =
+              req.headers["x-forwarded-for"] ||
+              req.connection.remoteAddress ||
+              req.socket.remoteAddress ||
+              req.connection.socket.remoteAddress;
 
-              // Insert into order table
-              const insertOrderSQL = `
-                INSERT INTO \`order\` (
-                  userID,
-                  addressID,
-                  prodID,
-                  quantity,
-                  colorID,
-                  storageID,
-                  infoID
-                )
-                SELECT
-                  ?,
-                  user_address.addressID,
-                  cart.prodID,
-                  cart.quantity,
-                  cart.colorID,
-                  cart.storageID,
-                  ?
-                FROM cart
-                JOIN user_address ON user_address.userID = cart.userID
-                WHERE cart.userID = ?;
-              `;
+            let config = require("config");
 
-              // Execute the insert query
-              db.query(insertOrderSQL, [userID, infoID, userID], (err, result) => {
-                if (err) {
-                  return db.rollback(() => {
-                    throw err;
-                  });
-                }
+            let tmnCode = config.get("vnp_TmnCode");
+            let secretKey = config.get("vnp_HashSecret");
+            let vnpUrl = config.get("vnp_Url");
+            let returnUrl = config.get("vnp_ReturnUrl");
+            let bankCode = req.body.bankCode;
 
-                // Commit the transaction if both queries succeed
-                db.commit((commitErr) => {
-                  if (commitErr) {
-                    return db.rollback(() => {
-                      throw commitErr;
-                    });
-                  }
+            let locale = req.body.language;
+            if (locale === null || locale === "") {
+              locale = "vn";
+            }
+            let currCode = "VND";
+            let vnp_Params = {
+              vnp_Version: "2.1.0",
+              vnp_Command: "pay",
+              vnp_TmnCode: tmnCode,
+              vnp_Locale: locale,
+              vnp_CurrCode: currCode,
+              vnp_TxnRef: orderId,
+              vnp_OrderInfo: uuid, // Assuming you want to use the UUID as the orderInfo
+              vnp_OrderType: "other",
+              vnp_Amount: amount * 100,
+              vnp_ReturnUrl: returnUrl,
+              vnp_IpAddr: ipAddr,
+              vnp_CreateDate: createDate,
+            };
 
-                  // Assuming you want to store the orderCode from the results
-                  const orderCode = uuid; // Adjust this based on your database schema
+            if (bankCode !== null && bankCode !== "") {
+              vnp_Params["vnp_BankCode"] = bankCode;
+            }
 
-                  let date = new Date();
-                  let createDate = moment(date).format("YYYYMMDDHHmmss");
-                  let orderId = moment(date).format("DDHHmmss");
+            vnp_Params = sortObject(vnp_Params);
 
-                  let ipAddr =
-                    req.headers["x-forwarded-for"] ||
-                    req.connection.remoteAddress ||
-                    req.socket.remoteAddress ||
-                    req.connection.socket.remoteAddress;
-
-                  let config = require("config");
-
-                  let tmnCode = config.get("vnp_TmnCode");
-                  let secretKey = config.get("vnp_HashSecret");
-                  let vnpUrl = config.get("vnp_Url");
-                  let returnUrl = config.get("vnp_ReturnUrl");
-                  let bankCode = req.body.bankCode;
-
-                  let locale = req.body.language;
-                  if (locale === null || locale === "") {
-                    locale = "vn";
-                  }
-                  let currCode = "VND";
-                  let vnp_Params = {
-                    vnp_Version: "2.1.0",
-                    vnp_Command: "pay",
-                    vnp_TmnCode: tmnCode,
-                    vnp_Locale: locale,
-                    vnp_CurrCode: currCode,
-                    vnp_TxnRef: orderId,
-                    vnp_OrderInfo: orderCode,
-                    vnp_OrderType: "other",
-                    vnp_Amount: amount * 100,
-                    vnp_ReturnUrl: returnUrl,
-                    vnp_IpAddr: ipAddr,
-                    vnp_CreateDate: createDate,
-                  };
-
-                  if (bankCode !== null && bankCode !== "") {
-                    vnp_Params["vnp_BankCode"] = bankCode;
-                  }
-
-                  vnp_Params = sortObject(vnp_Params);
-
-                  let querystring = require("qs");
-                  let signData = querystring.stringify(vnp_Params, {
-                    encode: false,
-                  });
-                  let crypto = require("crypto");
-                  let hmac = crypto.createHmac("sha512", secretKey);
-                  let signed = hmac
-                    .update(Buffer.from(signData, "utf-8"))
-                    .digest("hex");
-                  vnp_Params["vnp_SecureHash"] = signed;
-                  vnpUrl += "?" + querystring.stringify(vnp_Params, {
-                    encode: false,
-                  });
-
-                  // You can use orderCode as needed in the rest of your logic
-                  res.send(vnpUrl);
-                });
-              });
+            let querystring = require("qs");
+            let signData = querystring.stringify(vnp_Params, {
+              encode: false,
             });
+            let crypto = require("crypto");
+            let hmac = crypto.createHmac("sha512", secretKey);
+            let signed = hmac
+              .update(Buffer.from(signData, "utf-8"))
+              .digest("hex");
+            vnp_Params["vnp_SecureHash"] = signed;
+            vnpUrl +=
+              "?" +
+              querystring.stringify(vnp_Params, {
+                encode: false,
+              });
+
+            // Send the payment URL as the response
+            res.send(vnpUrl);
           });
-        } catch (queryErr) {
-          await db.rollback();
-          throw queryErr;
+        } catch (error) {
+          console.error("Error creating Banking order:", error);
+
+          // Rollback on error
+          db.rollback(() => {
+            res.status(500).send("Internal Server Error");
+          });
         }
       });
     } else {
@@ -288,11 +252,8 @@ router.post("/create_payment_url", async function (req, res, next) {
     res.status(500).send("Internal Server Error");
   }
 });
-
-
 router.get("/vnpay_return", async function (req, res, next) {
   try {
-    
     const vnp_Params = req.query;
     const { vnp_SecureHash, vnp_SecureHashType, ...otherParams } = vnp_Params;
     const sortedParams = sortObject(otherParams);
@@ -309,17 +270,13 @@ router.get("/vnpay_return", async function (req, res, next) {
     if (vnp_SecureHash === signed) {
       const orderCode = otherParams.vnp_OrderInfo;
       // Lấy chuỗi ngày thanh toán
-      
 
       const updateQuery = `UPDATE \`order_info\` SET orderStatus = "Đã thanh toán" WHERE orderCode = ?`;
 
       try {
         await db.query(updateQuery, [orderCode]);
 
-  
         try {
-          
-
           // Render success page
           res.json({
             code: otherParams.vnp_ResponseCode,
@@ -360,18 +317,22 @@ router.get("/vnpay_return", async function (req, res, next) {
 
 //get all order by orderCode
 router.get("/", (req, res) => {
-  const sql = `SELECT *,
-               COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
-               COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
-               COALESCE(product_entry.QTY, product.QTY) AS QTY
-               FROM \`order\`
-               LEFT JOIN product ON \`order\`.prodID = product.prodID
-               LEFT JOIN users ON \`order\`.userID = users.userID
-               LEFT JOIN order_info ON \`order\`.infoID = order_info.infoID
-               LEFT JOIN product_entry ON \`order\`.prodID = product_entry.prodID AND \`order\`.colorID = product_entry.colorID AND \`order\`.storageID = product_entry.storageID
-                LEFT JOIN color ON \`order\`.colorID = color.colorID
-                LEFT JOIN storage ON \`order\`.storageID = storage.storageID
-               ORDER BY orderCode;`;
+  const sql = `SELECT
+  *,
+  COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+  COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
+  COALESCE(product_entry.QTY, product.QTY) AS QTY
+FROM \`order\`
+LEFT JOIN order_info ON \`order\`.infoID = order_info.infoID
+LEFT JOIN product ON \`order\`.prodID = product.prodID
+LEFT JOIN users ON order_info.userID = users.userID
+LEFT JOIN product_entry ON \`order\`.prodID = product_entry.prodID
+                    AND \`order\`.colorID = product_entry.colorID
+                    AND \`order\`.storageID = product_entry.storageID
+LEFT JOIN color ON \`order\`.colorID = color.colorID
+LEFT JOIN storage ON \`order\`.storageID = storage.storageID
+ORDER BY orderCode;
+`;
   db.query(sql, (err, result) => {
     if (err) throw err;
     res.send(result);
@@ -380,41 +341,22 @@ router.get("/", (req, res) => {
 //get all order by userID
 router.get("/user/:userID", (req, res) => {
   const userID = req.params.userID;
-  const sql = `SELECT *,
+  const sql = `SELECT
+  *,
   COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
   COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
   COALESCE(product_entry.QTY, product.QTY) AS QTY
-  FROM \`order\`
-  LEFT JOIN product ON \`order\`.prodID = product.prodID
-  LEFT JOIN users ON \`order\`.userID = users.userID
-  LEFT JOIN order_info ON \`order\`.infoID = order_info.infoID
-  LEFT JOIN product_entry ON \`order\`.prodID = product_entry.prodID AND \`order\`.colorID = product_entry.colorID AND \`order\`.storageID = product_entry.storageID
-   LEFT JOIN color ON \`order\`.colorID = color.colorID
-   LEFT JOIN storage ON \`order\`.storageID = storage.storageID
-                 WHERE \`order\`.userID = ${userID}
-                 ORDER BY orderCode;`;
-  db.query(sql, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-//get order by orderCode
-router.get("/:orderCode", (req, res) => {
-  const orderCode = req.params.orderCode;
-  const sql = `SELECT \`order\`.*, product.*, users.*
-                 FROM \`order\`
-                 LEFT JOIN product ON \`order\`.prodID = product.prodID
-                 LEFT JOIN users ON \`order\`.userID = users.userID
-                 WHERE orderCode = "${orderCode}";`;
-  db.query(sql, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-// add delete order by orderCode
-router.delete("/", (req, res) => {
-  const orderCode = req.params.orderCode;
-  const sql = `DELETE FROM \`order\` WHERE orderCode = "${orderCode}";`;
+FROM \`order\`
+LEFT JOIN order_info ON \`order\`.infoID = order_info.infoID
+LEFT JOIN product ON \`order\`.prodID = product.prodID
+LEFT JOIN users ON order_info.userID = users.userID
+LEFT JOIN product_entry ON \`order\`.prodID = product_entry.prodID
+                    AND \`order\`.colorID = product_entry.colorID
+                    AND \`order\`.storageID = product_entry.storageID
+LEFT JOIN color ON \`order\`.colorID = color.colorID
+LEFT JOIN storage ON \`order\`.storageID = storage.storageID
+WHERE order_info.userID = ${userID}
+ORDER BY orderCode;`;
   db.query(sql, (err, result) => {
     if (err) throw err;
     res.send(result);

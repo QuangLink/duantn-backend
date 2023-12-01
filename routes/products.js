@@ -78,46 +78,62 @@ router.get("/search", (req, res) => {
     });
   }
 });
+router.get("/getCart", (req, res) => {
+  console.log(req.body);
+  const productId = req.body.prodID;
+  const colorId = req.body.colorID || null;
+  const storageId = req.body.storageID || null;
 
-//lấy sản phẩm có tất cả entry
-//lấy sản phẩm dựa theo entry nhất định
-//get all variant  product by id
-// router.get('/:id', (req, res) => {
-//   const productId = req.params.id;
-//   const colorId = req.params.colorId || null;
-//   const storageId = req.params.storageId || null;
-//   const query = `SELECT
-//   *,
-//   COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
-//   product.prodSale,
-//   COALESCE(
-//       (COALESCE(product_entry.prodPrice, product.prodPrice) +
-//        (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
-//       COALESCE(product_entry.prodPrice, product.prodPrice)
-//   ) AS prodPriceSale,
-//   COALESCE(product_entry.prodID, product.prodID) AS prodID
-//   -- Các trường khác mà bạn muốn lấy từ bảng product và product_entry
-// FROM
-//   product
-// LEFT JOIN
-//   product_entry ON product.prodID = product_entry.prodID
-// LEFT JOIN
-//   color ON product_entry.colorID = color.colorID
-// LEFT JOIN
-//   storage ON product_entry.storageID = storage.storageID
-// WHERE
-//    product.prodID = ?
-//    `;
-//   db.query(query, [productId, colorId, storageId], (error, results) => {
-//     if (error) throw error;
+  const query = `SELECT
+  *,
+  COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+  COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
+  product.prodSale,
+  COALESCE(
+      (COALESCE(product_entry.prodPrice, product.prodPrice) + 
+       (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
+      COALESCE(product_entry.prodPrice, product.prodPrice)
+      
+  ) AS prodPriceSale,
+  COALESCE(product_entry.prodID, product.prodID) AS prodID
+  -- Các trường khác mà bạn muốn lấy từ bảng product và product_entry
+FROM
+  product
+LEFT JOIN
+  product_entry ON product.prodID = product_entry.prodID
+LEFT JOIN
+  color ON product_entry.colorID = color.colorID
+  
+  LEFT JOIN
+    category ON product.prodcatID = category.prodcatID
+LEFT JOIN
+  storage ON product_entry.storageID = storage.storageID
+WHERE
+  product.prodID = ?
 
-//     if (results.length > 0) {
-//       res.json(results[0]);
-//     } else {
-//       res.status(404).send('Product not found');
-//     }
-//   });
-// });
+  AND (? IS NULL OR product_entry.colorID = ?)
+  AND (? IS NULL OR product_entry.storageID = ?)
+  ;
+
+`;
+
+  db.query(
+    query,
+    [productId, colorId, colorId, storageId, storageId],
+    (error, results) => {
+      if (error) throw error;
+      else if (results.length > 1) {
+        res.json(results);
+        console.log(results);
+      } else if (results.length > 0) {
+        res.json(results);
+        console.log(results);
+      } else {
+        res.status(404).send("Product not found");
+      }
+    }
+  );
+});
 
 router.get("/:id/:colorId?/:storageId?", (req, res) => {
   const productId = req.params.id;
@@ -127,6 +143,7 @@ router.get("/:id/:colorId?/:storageId?", (req, res) => {
   const query = `SELECT
   *,
   COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+  COALESCE(product_entry.QTY, product.QTY) AS QTY,
   COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
   product.prodSale,
   COALESCE(
@@ -173,6 +190,7 @@ WHERE
     }
   );
 });
+
 
 // Add a new product
 router.post("/", (req, res) => {

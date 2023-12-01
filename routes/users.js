@@ -233,6 +233,9 @@ router.post("/login", (req, res) => {
     }
 
     const user = results[0];
+    if (user.verified === 0) {
+      return res.status(404).json({ error: "Email chưa được xác nhận" });
+    } else {
     bcrypt.compare(password, user.password, (err, result) => {
       if (err) {
         return res.status(500).json({ error: "Internal Server Error" });
@@ -254,6 +257,7 @@ router.post("/login", (req, res) => {
 
       res.json({ token, payload });
     });
+  }
   });
 });
 //change password router based on userID and old pasword
