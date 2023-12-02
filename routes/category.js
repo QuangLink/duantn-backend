@@ -1,7 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const db = require("./../models/database");
-
+router.get("/catID", (req, res) => {
+  const query = `
+  SELECT prodcatID, catName FROM category;
+`;
+  db.query(query, (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+});
 // Get products where prodSale is not 0
 router.get("/sale", (req, res) => {
   const query = `SELECT
@@ -52,17 +60,47 @@ router.get("/:product/:prodType", (req, res) => {
   }
 
   let query = `
-    SELECT product.*, category.*
-    FROM product
-    JOIN category ON product.prodcatID = category.prodcatID
-    WHERE product.prodcatID = ?`;
+    SELECT
+      product.*,
+      category.*,
+      CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg,
+      COALESCE(
+        (product.prodPrice + (product.prodPrice * product.prodSale / 100)),
+        product.prodPrice
+      ) AS prodPriceSale
+    FROM
+      product
+      JOIN category ON product.prodcatID = category.prodcatID
+      LEFT JOIN feedback ON product.prodID = feedback.prodID
+    WHERE
+      product.prodcatID = ? AND product.QTY > 0
+    GROUP BY
+      product.prodID
+  `;
 
-  // Nếu prodTypeParam đã được chỉ định, thêm điều kiện cho prodType
+  // If prodTypeParam is specified, add condition for prodType
   if (prodTypeParam) {
-    query += " AND product.prodType = ?";
+    query = `
+      SELECT
+        product.*,
+        category.*,
+        CEILING(AVG(feedback.prodRate) * 2) / 2 AS prodRateAvg,
+        COALESCE(
+          (product.prodPrice + (product.prodPrice * product.prodSale / 100)),
+          product.prodPrice
+        ) AS prodPriceSale
+      FROM
+        product
+        JOIN category ON product.prodcatID = category.prodcatID
+        LEFT JOIN feedback ON product.prodID = feedback.prodID
+      WHERE
+        product.prodcatID = ? AND product.prodType = ? AND product.QTY > 0
+      GROUP BY
+        product.prodID
+    `;
   }
 
-  db.query(query, [prodcatID, prodTypeParam], (error, results) => {
+  db.query(query, prodTypeParam ? [prodcatID, prodTypeParam] : [prodcatID], (error, results) => {
     if (error) throw error;
 
     if (results.length > 0) {
@@ -74,6 +112,7 @@ router.get("/:product/:prodType", (req, res) => {
     }
   });
 });
+
 
 router.get("/:product", (req, res) => {
   const productParam = req.params.product.toLowerCase();

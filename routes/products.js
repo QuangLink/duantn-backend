@@ -1,6 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const db = require("./../models/database");
+
+router.get("/colors",(req, res) => {
+  const query = `
+  Select * from color;`
+  db.query(query, (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+})
+router.get("/storages", (req, res) => {
+  const query = `
+  Select * from storage;`
+  db.query(query, (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+}); 
 router.get("/total", (req, res) => {
   const query = `
   -- Retrieve all columns from the 'product' table
@@ -66,7 +83,8 @@ router.get("/search", (req, res) => {
     });
   } else {
     // Nếu prodName được cung cấp, tìm sản phẩm theo tên
-    const query = "SELECT * FROM product WHERE prodName LIKE ? WHERE product.QTY > 0;";
+    const query =
+      "SELECT * FROM product WHERE prodName LIKE ? WHERE product.QTY > 0;";
     db.query(query, [`%${prodName}%`], (error, results) => {
       if (error) throw error;
 
@@ -191,17 +209,34 @@ WHERE
   );
 });
 
-
 // Add a new product
 router.post("/", (req, res) => {
   const newProduct = req.body;
+  const catName = req.body.catName;
   const query = "INSERT INTO product SET ?";
   db.query(query, newProduct, (error, results) => {
     if (error) throw error;
     res.status(201).send("Product added successfully");
   });
 });
+router.post("/variants", (req, res) => {
+  const newProduct = req.body;
+  const catName = req.body.catName;
+  const query = "INSERT INTO product_entry SET ?";
+  db.query(query, newProduct, (error, results) => {
+    if (error) throw error;
+    res.status(201).send("Product added successfully");
+  });
+});
 
+router.post("/entry", (req, res) => {
+  const newProductEntry = req.body;
+  const query = "INSERT INTO product_entry SET ?";
+  db.query(query, newProductEntry, (error, results) => {
+    if (error) throw error;
+    res.status(201).send("Product added successfully");
+  });
+});
 // Update an existing product by ID
 router.put("/:id", (req, res) => {
   const productId = req.params.id;

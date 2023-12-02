@@ -34,7 +34,7 @@ const usersRouter = require("./routes/users");
 const productRouter = require("./routes/products");
 const adminRouter = require("./routes/admin");
 const categoryRouter = require("./routes/category");
-
+const blogRouter = require("./routes/blog");
 const orderRouter = require("./routes/orders");
 const feedbackRouter = require("./routes/feedback");
 const vnpayRouter = require("./routes/order");
@@ -59,7 +59,7 @@ app.use("/users", usersRouter);
 app.use("/products", productRouter);
 app.use("/admin", adminRouter);
 app.use("/category", categoryRouter);
-
+app.use("/blog", blogRouter);
 app.use("/orders", orderRouter);
 app.use("/order", vnpayRouter);
 app.use("/feedback", feedbackRouter);
