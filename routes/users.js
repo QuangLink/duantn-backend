@@ -128,32 +128,32 @@ router.post("/forgot", function (req, res, next) {
     }
     if (result.length === 0) {
       return res.status(404).json({ error: "Email not found" });
-    }
-    else{
-      bcrypt.hash(email, parseInt(process.env.BYCRYPT_SALT_ROUND)).then((hash) => {
-        console.log(
-          `${process.env.APP_URL}/users/resetpass?email=${email}& token=${hash}`
-        );
-        mailer
-          .sendMail(
-            email,
-            "Reset your password",
-            `
+    } else {
+      bcrypt
+        .hash(email, parseInt(process.env.BYCRYPT_SALT_ROUND))
+        .then((hash) => {
+          console.log(
+            `${process.env.APP_URL}/users/resetpass?email=${email}& token=${hash}`
+          );
+          mailer
+            .sendMail(
+              email,
+              "Reset your password",
+              `
         <h1>Reset your password</h1>
         <p>Click <a href="${process.env.APP_URL}/resetpass?email=${email}&token=${hash}">here</a> to reset your password.</p>
         `
-          )
-          .then((result) => {
-            return res.status(200).json({ error: "Email sent" });
-          })
-          .catch((error) => {
-            console.log(error);
-          });
-      });
+            )
+            .then((result) => {
+              return res.status(200).json({ error: "Email sent" });
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        });
     }
   });
   //send email
-  
 });
 //update password with token to reset password
 router.put("/resetpass", (req, res) => {
@@ -169,9 +169,7 @@ router.put("/resetpass", (req, res) => {
           if (updateErr) {
             return res.status(500).json({ error: "Internal Server Error" });
           }
-          return res
-            .status(201)
-            .json({ message: "Đổi mật khẩu thành công" });
+          return res.status(201).json({ message: "Đổi mật khẩu thành công" });
         });
       });
     } else {
@@ -204,7 +202,8 @@ router.post("/googleusers", (req, res) => {
       });
     } else {
       // Nếu không có trùng lặp, thêm bản ghi mới
-      const insertQuery = "INSERT INTO users (username, email,verified) VALUES (?, ?,1)";
+      const insertQuery =
+        "INSERT INTO users (username, email,verified) VALUES (?, ?,1)";
       db.query(insertQuery, [username, email], (insertErr, insertResult) => {
         if (insertErr) {
           return res.status(500).json({ error: "Internal Server Error" });
@@ -233,9 +232,9 @@ router.post("/login", (req, res) => {
     }
 
     const user = results[0];
-    if (user.verified === 0) {
-      return res.status(404).json({ error: "Email chưa được xác nhận" });
-    } else {
+    // if (user.verified === 0) {
+    //   return res.status(404).json({ error: "Email chưa được xác nhận" });
+    // } else {
     bcrypt.compare(password, user.password, (err, result) => {
       if (err) {
         return res.status(500).json({ error: "Internal Server Error" });
@@ -257,7 +256,6 @@ router.post("/login", (req, res) => {
 
       res.json({ token, payload });
     });
-  }
   });
 });
 //change password router based on userID and old pasword
