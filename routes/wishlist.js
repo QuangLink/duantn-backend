@@ -84,19 +84,19 @@ router.post("/", (req, res) => {
     res.status(400).send("Missing userID");
     return;
   }
-  const checkSql = `SELECT * FROM wishlist WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID} AND storageID = ${storageID};`;
+  const checkSql = `SELECT * FROM wishlist WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID || 'NULL'} AND storageID = ${storageID || 'NULL'};`;
   db.query(checkSql, (err, result) => {
     if (err) throw err;
     if (result.length > 0) {
       const updateSql = `UPDATE wishlist 
       SET quantity = quantity + 1 
-      WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID} AND storageID = ${storageID};`;
+      WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID || 'NULL'} AND storageID = ${storageID || 'NULL'};`;
       db.query(updateSql, (err, result) => {
         if (err) throw err;
         res.send(result);
       });
     } else {
-      const insertSql = `INSERT INTO wishlist (prodID, userID,colorID,storageID, quantity) VALUES (${prodID}, ${userID},${colorID},${storageID}, 1);`;
+      const insertSql = `INSERT INTO wishlist (prodID, userID,colorID,storageID, quantity) VALUES (${prodID}, ${userID},${colorID || 'NULL'},${storageID || 'NULL'}, 1);`;
       db.query(insertSql, (err, result) => {
         if (err) throw err;
         res.send(result);
