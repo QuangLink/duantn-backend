@@ -21,7 +21,7 @@ COALESCE(product_entry.QTY, product.QTY) AS QTY,
 COALESCE(
     (COALESCE(product_entry.prodPrice, product.prodPrice) + 
      (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
-    COALESCE(product_entry.prodPrice, product.prodPrice)
+    COALESCE(product_entry.prodPrice, product.prodPrice) 
 ) AS prodPriceSale,
 COALESCE(product_entry.prodID, product.prodID) AS prodID
 

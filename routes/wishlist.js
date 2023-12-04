@@ -7,19 +7,24 @@ router.options("/", (req, res) => {
 });
 router.post("/", (req, res) => {
   const { userID, prodID, colorID, storageID } = req.body;
-  const checkDuplicate = "SELECT * FROM wishlist WHERE userID =? AND prodID =? AND colorID =? AND storageID =?";
-  db.query(checkDuplicate, [userID, prodID, colorID, storageID], (error, results) => {
-    if (error) throw error;
-    else if (results.length > 0) {
-      res.status(400).send("Product already in wishlist");
-    } else {
-      const sql = `INSERT INTO wishlist (userID, prodID, colorID, storageID) VALUES (${userID}, ${prodID}, ${colorID}, ${storageID});`;
-      db.query(sql, (err, result) => {
-        if (err) throw err;
-        res.send(result);
-      });
+  const checkDuplicate =
+    "SELECT * FROM wishlist WHERE userID =? AND prodID =? AND colorID =? AND storageID =?";
+  db.query(
+    checkDuplicate,
+    [userID, prodID, colorID, storageID],
+    (error, results) => {
+      if (error) throw error;
+      else if (results.length > 0) {
+        res.status(400).send("Product already in wishlist");
+      } else {
+        const sql = `INSERT INTO wishlist (userID, prodID, colorID, storageID) VALUES (${userID}, ${prodID}, ${colorID}, ${storageID});`;
+        db.query(sql, (err, result) => {
+          if (err) throw err;
+          res.send(result);
+        });
+      }
     }
-  });
+  );
 });
 router.get("/:userID", (req, res) => {
   const { userID } = req.params;
@@ -55,12 +60,52 @@ router.get("/:userID", (req, res) => {
 });
 
 //xóa sản phẩm trong giỏ hàng dựa trên prodID
-router.delete("/:userID/:prodID", (req, res) => {
-  const { userID, prodID } = req.params;
-  const sql = `DELETE FROM wishlist WHERE prodID = ${prodID} AND userID = ${userID};`;
-  db.query(sql, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
+router.delete("/", (req, res) => {
+  const { userID, prodID, colorID, storageID } = req.body;
+  const selectSql = `
+    SELECT * FROM wishlist 
+    WHERE prodID = ? 
+      AND userID = ? 
+      AND (colorID = ? OR (colorID IS NULL AND ? IS NULL))
+      AND (storageID = ? OR (storageID IS NULL AND ? IS NULL));
+  `;
+
+  db.query(
+    selectSql,
+    [prodID, userID, colorID, colorID, storageID, storageID],
+    (err, result) => {
+      if (err) {
+        console.error("Error selecting from wishlist:", err);
+        res.status(500).send("Internal Server Error");
+      } else {
+        console.log(`Selected ${result.length} record(s).`);
+        if (result.length > 0) {
+          const deleteSql = `
+          DELETE FROM wishlist 
+          WHERE prodID = ? 
+            AND userID = ? 
+            AND (colorID = ? OR (colorID IS NULL AND ? IS NULL))
+            AND (storageID = ? OR (storageID IS NULL AND ? IS NULL));
+        `;
+          db.query(
+            deleteSql,
+            [prodID, userID, colorID, colorID, storageID, storageID],
+            (err, result) => {
+              if (err) {
+                console.error("Error deleting from wishlist:", err); // Log the err object
+                res.status(500).send("Internal Server Error");
+              } else {
+                console.log(`Deleted ${result.affectedRows} record(s).`);
+                res.send(result);
+              }
+            }
+          );
+        } else {
+          res.send("No matching records found.");
+        }
+      }
+    }
+  );
 });
+
 module.exports = router;

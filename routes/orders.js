@@ -35,8 +35,8 @@ router.post("/cod", async function (req, res, next) {
   try {
     if (req.body && req.body.userID) {
       const userID = req.body.userID;
-      const uuid = uuidv1(); // Generate a UUID for the orderCode
-      const amount = req.body.amount;
+      const uuid = uuidv1(); 
+      const amount = req.body.amount; 
 
       // Start a transaction
       db.beginTransaction(async (err) => {
