@@ -19,7 +19,7 @@ function authenToken(req, res, next) {
       return res.status(403).json({ error: "Invalid token" });
     }
 
-    req.payload = payload; // Assign the decoded payload to req.payload
+    req.payload = payload; 
     req.token = token;
     req.username = payload.username;
     req.userID = payload.userID;

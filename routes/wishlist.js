@@ -5,9 +5,25 @@ const { authenToken } = require("./middleware");
 router.options("/", (req, res) => {
   res.status(200).send("OK");
 });
+router.post("/", (req, res) => {
+  const { userID, prodID, colorID, storageID } = req.body;
+  const checkDuplicate = "SELECT * FROM wishlist WHERE userID =? AND prodID =? AND colorID =? AND storageID =?";
+  db.query(checkDuplicate, [userID, prodID, colorID, storageID], (error, results) => {
+    if (error) throw error;
+    else if (results.length > 0) {
+      res.status(400).send("Product already in wishlist");
+    } else {
+      const sql = `INSERT INTO wishlist (userID, prodID, colorID, storageID) VALUES (${userID}, ${prodID}, ${colorID}, ${storageID});`;
+      db.query(sql, (err, result) => {
+        if (err) throw err;
+        res.send(result);
+      });
+    }
+  });
+});
 router.get("/:userID", (req, res) => {
   const { userID } = req.params;
-  const sql = `SELECT *,
+  const sql = `SELECT *, 
   COALESCE(product_entry.prodPrice, product.prodPrice) as prodPrice,
   COALESCE(product_entry.prodID, product.prodID) as prodID,
   COALESCE(product_entry.prodImg, product.prodImg) as prodImg,
@@ -37,77 +53,11 @@ router.get("/:userID", (req, res) => {
     res.send(result);
   });
 });
-//router +1 value in quantity by cartID
-router.put("/plus/:cartID", (req, res) => {
-  const cartID = req.params.cartID;
-  const sql = `UPDATE cart SET quantity = quantity + 1 WHERE cartID = ${cartID};`;
-  db.query(sql, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-// router set value in quantity by cartID
-router.put("/set/:cartID", (req, res) => {
-  const cartID = req.params.cartID;
-  const { quantity } = req.body;
-  const sql = `UPDATE cart SET quantity = ${quantity} WHERE cartID = ${cartID};`;
-  db.query(sql, (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
-});
-router.put("/minus/:cartID", (req, res) => {
-  const cartID = req.params.cartID;
-  const sql = `UPDATE wishlist SET quantity = quantity - 1 WHERE cartID = ${cartID};`;
-  db.query(sql, (err, result) => {
-    if (err) throw err;
-    const sql2 = `SELECT quantity FROM wishlist WHERE cartID = ${cartID};`;
-    db.query(sql2, (err, result2) => {
-      if (err) throw err;
-      if (result2[0].quantity === 0) {
-        const sql3 = `DELETE FROM wishlist WHERE cartID = ${cartID};`;
-        db.query(sql3, (err, result3) => {
-          if (err) throw err;
-          res.send(result3);
-        });
-      } else {
-        res.send(result);
-      }
-    });
-  });
-});
-//thêm sản phẩm vào giỏ hàng dựa trên prodID và userID
-router.post("/", (req, res) => {
-  const { prodID, userID, colorID, storageID } = req.body;
-  console.log(req.body);
-  if (!userID) {
-    res.status(400).send("Missing userID");
-    return;
-  }
-  const checkSql = `SELECT * FROM wishlist WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID || 'NULL'} AND storageID = ${storageID || 'NULL'};`;
-  db.query(checkSql, (err, result) => {
-    if (err) throw err;
-    if (result.length > 0) {
-      const updateSql = `UPDATE wishlist 
-      SET quantity = quantity + 1 
-      WHERE prodID = ${prodID} AND userID = ${userID} AND colorID = ${colorID || 'NULL'} AND storageID = ${storageID || 'NULL'};`;
-      db.query(updateSql, (err, result) => {
-        if (err) throw err;
-        res.send(result);
-      });
-    } else {
-      const insertSql = `INSERT INTO wishlist (prodID, userID,colorID,storageID, quantity) VALUES (${prodID}, ${userID},${colorID || 'NULL'},${storageID || 'NULL'}, 1);`;
-      db.query(insertSql, (err, result) => {
-        if (err) throw err;
-        res.send(result);
-      });
-    }
-  });
-});
+
 //xóa sản phẩm trong giỏ hàng dựa trên prodID
-router.delete("/:cartID", (req, res) => {
-  const cartID = req.params.cartID;
-  const sql = `DELETE FROM cart WHERE cartID = ${cartID} ;`;
+router.delete("/:userID/:prodID", (req, res) => {
+  const { userID, prodID } = req.params;
+  const sql = `DELETE FROM wishlist WHERE prodID = ${prodID} AND userID = ${userID};`;
   db.query(sql, (err, result) => {
     if (err) throw err;
     res.send(result);
