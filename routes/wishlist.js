@@ -62,47 +62,23 @@ router.get("/:userID", (req, res) => {
 //xóa sản phẩm trong giỏ hàng dựa trên prodID
 router.delete("/", (req, res) => {
   const { userID, prodID, colorID, storageID } = req.body;
-  const selectSql = `
-    SELECT * FROM wishlist 
+  const sql = `
+    DELETE FROM wishlist 
     WHERE prodID = ? 
       AND userID = ? 
-      AND (colorID = ? OR (colorID IS NULL AND ? IS NULL))
+      AND (colorID = ? OR (colorID IS NULL AND ? IS NULL)) 
       AND (storageID = ? OR (storageID IS NULL AND ? IS NULL));
   `;
 
   db.query(
-    selectSql,
-    [prodID, userID, colorID, colorID, storageID, storageID],
+    sql,
+    [prodID, userID, storageID, storageID, colorID, colorID],
     (err, result) => {
       if (err) {
-        console.error("Error selecting from wishlist:", err);
+        console.error("Error deleting from wishlist:", err);
         res.status(500).send("Internal Server Error");
       } else {
-        console.log(`Selected ${result.length} record(s).`);
-        if (result.length > 0) {
-          const deleteSql = `
-          DELETE FROM wishlist 
-          WHERE prodID = ? 
-            AND userID = ? 
-            AND (colorID = ? OR (colorID IS NULL AND ? IS NULL))
-            AND (storageID = ? OR (storageID IS NULL AND ? IS NULL));
-        `;
-          db.query(
-            deleteSql,
-            [prodID, userID, colorID, colorID, storageID, storageID],
-            (err, result) => {
-              if (err) {
-                console.error("Error deleting from wishlist:", err); // Log the err object
-                res.status(500).send("Internal Server Error");
-              } else {
-                console.log(`Deleted ${result.affectedRows} record(s).`);
-                res.send(result);
-              }
-            }
-          );
-        } else {
-          res.send("No matching records found.");
-        }
+        res.send(result);
       }
     }
   );
