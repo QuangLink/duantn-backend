@@ -7,6 +7,7 @@ let $ = require("jquery");
 const request = require("request");
 const { await } = require("await");
 const config = require("config");
+const mailer = require("../utils/mailer");
 router.put("/update-order/:infoID", (req, res) => {
   console.log(req.body);
   console.log(req.params);
@@ -27,16 +28,12 @@ router.get("/total", (req, res) => {
     console.log(infoID);
   });
 });
-
 router.post("/cod", async function (req, res, next) {
-  console.log(req.body.userCart);
-  const userCart = req.body.userCart;
-
   try {
     if (req.body && req.body.userID) {
       const userID = req.body.userID;
-      const uuid = uuidv1(); 
-      const amount = req.body.amount; 
+      const uuid = uuidv1();
+      const amount = req.body.amount;
 
       // Start a transaction
       db.beginTransaction(async (err) => {
@@ -69,7 +66,7 @@ router.post("/cod", async function (req, res, next) {
 
           // Insert into order table
           const orderSql = `INSERT INTO \`order\` (prodID, quantity, colorID, storageID, infoID) VALUES (?, ?, ?, ?, ?)`;
-          for (const item of userCart) {
+          for (const item of req.body.userCart) {
             await db.query(orderSql, [
               item.prodID,
               item.quantity,
@@ -80,14 +77,82 @@ router.post("/cod", async function (req, res, next) {
           }
 
           // Commit the transaction
-          db.commit((err) => {
+          db.commit(async (err) => {
             if (err) {
               return db.rollback(() => {
                 throw err;
               });
             }
-            console.log("Transaction Complete.");
-            res.status(200).json({ success: true });
+            const getAdress = () => {
+              return new Promise((resolve, reject) => {
+                db.query(
+                  "SELECT * FROM user_address WHERE userID =?",
+                  [userID],
+                  (err, result) => {
+                    if (err) {
+                      reject(err);
+                    } else {
+                      const data = result.map((row) => ({ ...row }));
+                      resolve(data);
+                    }
+                  }
+                );
+              });
+            };
+            const address = await getAdress();
+            console.log(address);
+            const getEmail = () => {
+              return new Promise((resolve, reject) => {
+                db.query(
+                  "SELECT email FROM users WHERE userID = ?",
+                  [userID],
+                  (err, result) => {
+                    if (err) {
+                      reject(err);
+                    } else {
+                      resolve(result[0].email);
+                    }
+                  }
+                );
+              });
+            };
+
+            // Get the user's email
+            const email = await getEmail();
+            const to = email;
+            console.log(to);
+            const subject = "Đặt hàng thành công";
+            const content = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+            </head>
+            <body style="background-color: white; color: black;">
+            <div style="background-color: red; color: white; padding: 10px; text-align: center;">
+            <h1>Thanks for your order!!!</h1>
+            </div>
+            <div style="margin-top: 20px; font-family: Arial, sans-serif;">
+            <p style="font-size: 18px;">Cảm ơn bạn đã đặt hàng tại <a href="Jaguarshop.live" style="color: #1a0dab; text-decoration: none;">jaguarshop.live</a>, đây là thông tin đơn hàng đã thanh toán</p>
+            <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 20px;">
+            <h2 style="margin-top: 0;">Thông tin đơn hàng</h2>
+            <p><strong>Địa chỉ giao hàng:</strong> {order.shipping_address}</p>
+            </div>
+            </div>
+            </div>
+            </body>
+            </html>
+            `;
+            mailer
+              .sendMail(to, subject, content)
+              .then((result) => {
+                console.log(result);
+                console.log("Transaction Complete.");
+                res.status(200).json({ success: true });
+              })
+              .catch((error) => {
+                console.error("Error sending mail:", error);
+                res.status(500).send("Internal Server Error");
+              });
           });
         } catch (error) {
           console.error("Error creating COD order:", error);
@@ -105,6 +170,7 @@ router.post("/cod", async function (req, res, next) {
     res.status(500).send("Internal Server Error");
   }
 });
+
 const queryAsync = (sql, values) => {
   return new Promise((resolve, reject) => {
     db.query(sql, values, (err, result) => {

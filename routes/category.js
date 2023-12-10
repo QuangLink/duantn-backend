@@ -100,19 +100,22 @@ router.get("/:product/:prodType", (req, res) => {
     `;
   }
 
-  db.query(query, prodTypeParam ? [prodcatID, prodTypeParam] : [prodcatID], (error, results) => {
-    if (error) throw error;
+  db.query(
+    query,
+    prodTypeParam ? [prodcatID, prodTypeParam] : [prodcatID],
+    (error, results) => {
+      if (error) throw error;
 
-    if (results.length > 0) {
-      res.json(results);
-    } else {
-      res
-        .status(404)
-        .send("No products found for the given prodcatID and prodType");
+      if (results.length > 0) {
+        res.json(results);
+      } else {
+        res
+          .status(404)
+          .send("No products found for the given prodcatID and prodType");
+      }
     }
-  });
+  );
 });
-
 
 router.get("/:product", (req, res) => {
   const productParam = req.params.product.toLowerCase();
@@ -177,6 +180,7 @@ router.get("/:product", (req, res) => {
       LEFT JOIN product_entry ON product.prodID = product_entry.prodID
       LEFT JOIN color ON product_entry.colorID = color.colorID
       LEFT JOIN storage ON product_entry.storageID = storage.storageID
+      LEFT JOIN ram ON product_entry.ramID = ram.ramID
     WHERE
       product.prodType = ? AND product.QTY > 0
     GROUP BY product.prodID

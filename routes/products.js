@@ -123,11 +123,14 @@ LEFT JOIN
     category ON product.prodcatID = category.prodcatID
 LEFT JOIN
   storage ON product_entry.storageID = storage.storageID
+  LEFT JOIN
+  ram ON product_entry.ramID = ram.ramID
 WHERE
   product.prodID = ?
 
   AND (? IS NULL OR product_entry.colorID = ?)
   AND (? IS NULL OR product_entry.storageID = ?)
+  AND (? IS NULL OR product_entry.ramID =?)
   ;
 
 `;
@@ -164,6 +167,7 @@ router.get("/edit/:id", (req, res) => {
     LEFT JOIN category ON product.prodcatID = category.prodcatID
     LEFT JOIN storage ON product_entry.storageID = storage.storageID
     LEFT JOIN color ON product_entry.colorID = color.colorID
+    LEFT JOIN ram ON product_entry.ramID = ram.ramID
     WHERE product.prodID = ?
   `;
   db.query(query, [productId], (error, results) => {
@@ -201,6 +205,8 @@ LEFT JOIN
     category ON product.prodcatID = category.prodcatID
 LEFT JOIN
   storage ON product_entry.storageID = storage.storageID
+  LEFT JOIN
+  ram ON product_entry.ramID = ram.ramID
 WHERE
   product.prodID = ?
 

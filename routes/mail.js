@@ -2,6 +2,8 @@ var express = require("express");
 var router = express.Router();
 const mailer = require("../utils/mailer");
 const db = require("./../models/database");
+const { v1: uuidv1 } = require("uuid");
+
 
 router.post("/", async function (req, res, next) {
   try {
@@ -37,7 +39,7 @@ router.post("/", async function (req, res, next) {
     console.log(info); // Log the 'info' variable
     console.log(info[0].userID); // Log the 'shipping_address' property of the first item in the 'info' array
     const address = `${info[0].flat}, ${info[0].street}, ${info[0].state}, ${info[0].city}`;
-    const name = `${info[0].firstname} ${info[0].lastname}`
+    const name = `${info[0].firstname} ${info[0].lastname}`;
     // Chuyển đổi chuỗi thành đối tượng Date
     const payDateString = vnp_PayDate;
     const payDate = new Date(
