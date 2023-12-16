@@ -59,7 +59,6 @@ LEFT JOIN
     category ON product.prodcatID = category.prodcatID
 LEFT JOIN
     feedback ON product.prodID = feedback.prodID
-WHERE product.QTY > 0 OR product_entry.QTY > 0
 GROUP BY 
     product.prodID;
   
