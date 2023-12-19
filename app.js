@@ -8,7 +8,8 @@ const logger = require("morgan");
 const cors = require("cors");
 const app = express();
 var favicon = require("serve-favicon");
-
+//inset dotenv
+require("dotenv").config();
 app.use(
   cors({
     origin: [
