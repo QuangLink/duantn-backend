@@ -6,7 +6,7 @@ const moment = require("moment");
 let $ = require("jquery");
 const request = require("request");
 const { await } = require("await");
-const config = require("config");
+let config = require('config');
 const mailer = require("../utils/mailer");
 router.put("/update-order/:infoID", (req, res) => {
   console.log(req.body);
