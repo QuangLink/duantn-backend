@@ -10,4 +10,12 @@ router.get("/", function (req, res, next) {
  router.get("/env", (req, res) => {
   res.json(process.env);  
 })
+//check database connection
+router.get("/db", (req, res) => {
+  const query = "SELECT * FROM product";
+  db.query(query, (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+})
 module.exports = router;
