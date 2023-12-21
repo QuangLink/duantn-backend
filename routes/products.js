@@ -174,6 +174,40 @@ router.get("/edit/:id", (req, res) => {
     res.json(results);
   });
 });
+router.get("/:id/ram/:ramID?", (req, res) => {
+  const productId = req.params.id;
+  const ramId = req.params.ramID || null;
+  const query = `SELECT
+  *,
+  COALESCE(product_entry.prodPrice, product.prodPrice) AS prodPrice,
+  COALESCE(product_entry.QTY, product.QTY) AS QTY,
+  COALESCE(product_entry.prodImg, product.prodImg) AS prodImg,
+  product.prodSale,
+  COALESCE(
+      (COALESCE(product_entry.prodPrice, product.prodPrice) + 
+       (COALESCE(product_entry.prodPrice, product.prodPrice) * product.prodSale / 100)),
+      COALESCE(product_entry.prodPrice, product.prodPrice)
+      
+  ) AS prodPriceSale,
+  COALESCE(product_entry.prodID, product.prodID) AS prodID
+FROM
+  product
+LEFT JOIN
+  product_entry ON product.prodID = product_entry.prodID
+LEFT JOIN
+  category ON product.prodcatID = category.prodcatID
+LEFT JOIN
+  ram ON product_entry.ramID = ram.ramID
+WHERE
+  product.prodID = ?
+AND (? IS NULL OR product_entry.ramID = ?)
+  ;`;
+
+  db.query(query, [productId, ramId, ramId], (error, results) => {
+    if (error) throw error;
+    res.json(results);
+  });
+});
 router.get("/:id/:colorId?/:storageId?", (req, res) => {
   const productId = req.params.id;
   const colorId = req.params.colorId || null;
@@ -231,6 +265,8 @@ WHERE
     }
   );
 });
+
+
 
 // Add a new product
 router.post("/", (req, res) => {
